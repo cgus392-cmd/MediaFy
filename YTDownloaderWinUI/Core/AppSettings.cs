@@ -18,6 +18,7 @@ public partial class AppSettings : ObservableObject
 
     [ObservableProperty] private bool _showLogs;
     [ObservableProperty] private int _maxConcurrent = 3;
+    [ObservableProperty] private int _cascadeThreshold = 70;
     [ObservableProperty] private string _outputFolder = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", "YTDownloader");
 

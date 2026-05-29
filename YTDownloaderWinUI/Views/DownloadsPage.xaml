@@ -145,8 +145,6 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="14" />
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="14" />
-                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
@@ -176,19 +174,7 @@
                 </ComboBox>
             </StackPanel>
 
-            <StackPanel Grid.Column="4">
-                <TextBlock Text="SIMULTÁNEAS" FontSize="11" FontWeight="SemiBold"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="2,0,0,4" />
-                <ComboBox x:Name="CboConcurrent" Width="80" SelectionChanged="CboConcurrent_SelectionChanged">
-                    <ComboBoxItem Content="1" />
-                    <ComboBoxItem Content="2" />
-                    <ComboBoxItem Content="3" IsSelected="True" />
-                    <ComboBoxItem Content="4" />
-                    <ComboBoxItem Content="5" />
-                </ComboBox>
-            </StackPanel>
-
-            <Button Grid.Column="6" x:Name="BtnDownload" Click="BtnDownload_Click"
+            <Button Grid.Column="4" x:Name="BtnDownload" Click="BtnDownload_Click"
                     Style="{ThemeResource AccentButtonStyle}"
                     MinWidth="150" VerticalAlignment="Bottom">
                 <StackPanel Orientation="Horizontal" Spacing="8">

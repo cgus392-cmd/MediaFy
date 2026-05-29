@@ -25,11 +25,6 @@ public sealed partial class DownloadsPage : Page
         _manager.Queue.CollectionChanged += (_, _) => RefreshListState();
         RefreshListState();
 
-        // Restaura la concurrencia guardada
-        int saved = _manager.MaxConcurrent;
-        foreach (ComboBoxItem ci in CboConcurrent.Items)
-            if ((string)ci.Content == saved.ToString()) { ci.IsSelected = true; break; }
-
         _previewTimer.Tick += async (_, _) => { _previewTimer.Stop(); await UpdatePreviewAsync(); };
         TxtUrl.TextChanged += (_, _) => { _previewTimer.Stop(); _previewTimer.Start(); };
 
@@ -163,13 +158,6 @@ public sealed partial class DownloadsPage : Page
             .Where(x => x.Status is DownloadStatus.Done or DownloadStatus.Error or DownloadStatus.Canceled)
             .ToList();
         foreach (var item in done) _manager.Queue.Remove(item);
-    }
-
-    private void CboConcurrent_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (CboConcurrent.SelectedItem is ComboBoxItem item &&
-            int.TryParse((string)item.Content, out int n))
-            _manager.MaxConcurrent = n;
     }
 
     private void CboFormat_SelectionChanged(object sender, SelectionChangedEventArgs e)

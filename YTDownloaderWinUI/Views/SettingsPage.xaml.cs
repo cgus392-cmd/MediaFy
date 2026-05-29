@@ -12,7 +12,20 @@ public sealed partial class SettingsPage : Page
     {
         InitializeComponent();
         TxtFolder.Text = App.DownloadManager.OutputFolder;
+
+        // Restaura el umbral de cascada guardado
+        int threshold = Core.AppSettings.Current.CascadeThreshold;
+        foreach (ComboBoxItem ci in CboThreshold.Items)
+            if ((string?)ci.Tag == threshold.ToString()) { ci.IsSelected = true; break; }
+
         _ = LoadYtDlpVersionAsync();
+    }
+
+    private void OnThresholdChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (CboThreshold.SelectedItem is ComboBoxItem item &&
+            int.TryParse((string?)item.Tag, out int v))
+            Core.AppSettings.Current.CascadeThreshold = v;
     }
 
     private async Task LoadYtDlpVersionAsync()

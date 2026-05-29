@@ -7,6 +7,7 @@ namespace YTDownloader;
 public partial class App : Application
 {
     public static DownloadManager DownloadManager { get; } = new();
+    public static CascadeManager CascadeManager { get; } = new();
     public static Window? MainWindow { get; private set; }
 
     public App()

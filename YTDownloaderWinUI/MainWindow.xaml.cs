@@ -33,6 +33,7 @@ public sealed partial class MainWindow : Window
             switch (item.Tag?.ToString())
             {
                 case "downloads": ContentFrame.Navigate(typeof(DownloadsPage)); break;
+                case "cascade":   ContentFrame.Navigate(typeof(CascadePage));   break;
                 case "library":   ContentFrame.Navigate(typeof(LibraryPage));   break;
             }
         }

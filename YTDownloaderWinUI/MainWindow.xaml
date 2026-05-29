@@ -38,6 +38,11 @@
                         <FontIcon Glyph="&#xE896;" />
                     </muxc:NavigationViewItem.Icon>
                 </muxc:NavigationViewItem>
+                <muxc:NavigationViewItem Content="Descargas en cascada" Tag="cascade">
+                    <muxc:NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xEC4A;" />
+                    </muxc:NavigationViewItem.Icon>
+                </muxc:NavigationViewItem>
                 <muxc:NavigationViewItem Content="Biblioteca" Tag="library">
                     <muxc:NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE8F1;" />
