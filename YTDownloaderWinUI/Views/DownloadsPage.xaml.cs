@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -9,42 +8,28 @@ using Windows.ApplicationModel.DataTransfer;
 using Windows.System;
 using YTDownloader.Models;
 
-namespace YTDownloader;
+namespace YTDownloader.Views;
 
-public sealed partial class MainPage : Page
+public sealed partial class DownloadsPage : Page
 {
     private readonly Core.DownloadManager _manager = App.DownloadManager;
 
-    public MainPage()
+    public DownloadsPage()
     {
         InitializeComponent();
-        Loaded += OnLoaded;
-
         DownloadsList.ItemsSource = _manager.Queue;
         _manager.Queue.CollectionChanged += (_, _) => RefreshListState();
         RefreshListState();
-        CheckDependencies();
-    }
-
-    private void OnLoaded(object sender, RoutedEventArgs e)
-    {
-        // Registra el title bar con la ventana para drag y doble-click nativo
-        if (App.MainWindow is MainWindow mw)
-            mw.SetTitleBarElement(AppTitleBar);
+        if (!_manager.IsReady)
+            TxtStatus.Text = "⚠  Faltan yt-dlp.exe o ffmpeg.exe en Assets/";
     }
 
     private void RefreshListState()
     {
         int count = _manager.Queue.Count;
         TxtCount.Text = count.ToString();
-        EmptyState.Visibility    = count == 0 ? Visibility.Visible  : Visibility.Collapsed;
-        DownloadsList.Visibility = count >  0 ? Visibility.Visible  : Visibility.Collapsed;
-    }
-
-    private void CheckDependencies()
-    {
-        if (!_manager.IsReady)
-            TxtStatus.Text = "⚠  Faltan yt-dlp.exe o ffmpeg.exe en Assets/";
+        EmptyState.Visibility    = count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        DownloadsList.Visibility = count >  0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private async void BtnDownload_Click(object sender, RoutedEventArgs e)
@@ -88,25 +73,12 @@ public sealed partial class MainPage : Page
             BtnDownload_Click(sender, new RoutedEventArgs());
     }
 
-    private void BtnOpenFolder_Click(object sender, RoutedEventArgs e)
-    {
-        Directory.CreateDirectory(_manager.OutputFolder);
-        Process.Start("explorer.exe", _manager.OutputFolder);
-    }
-
-    private async void BtnSettings_Click(object sender, RoutedEventArgs e)
-    {
-        var dlg = new SettingsDialog { XamlRoot = XamlRoot };
-        await dlg.ShowAsync();
-    }
-
     private void BtnClearDone_Click(object sender, RoutedEventArgs e)
     {
         var done = _manager.Queue
             .Where(x => x.Status is DownloadStatus.Done or DownloadStatus.Error)
             .ToList();
-        foreach (var item in done)
-            _manager.Queue.Remove(item);
+        foreach (var item in done) _manager.Queue.Remove(item);
     }
 
     private void CboFormat_SelectionChanged(object sender, SelectionChangedEventArgs e)

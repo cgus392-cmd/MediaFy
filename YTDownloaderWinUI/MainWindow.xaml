@@ -3,9 +3,49 @@
     x:Class="YTDownloader.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:YTDownloader">
+    xmlns:muxc="using:Microsoft.UI.Xaml.Controls">
+
     <Window.SystemBackdrop>
         <MicaBackdrop />
     </Window.SystemBackdrop>
-    <local:MainPage x:Name="RootPage" />
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Barra de título personalizada (arrastrable) -->
+        <Grid x:Name="AppTitleBar" Grid.Row="0" Height="44" Background="Transparent">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0">
+                <FontIcon Glyph="&#xEBD3;" FontSize="16"
+                          Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                <TextBlock Text="YT Downloader" FontSize="13" FontWeight="SemiBold"
+                           VerticalAlignment="Center" Margin="10,0,0,0" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Navegación lateral -->
+        <muxc:NavigationView x:Name="Nav" Grid.Row="1"
+                             IsBackButtonVisible="Collapsed"
+                             IsSettingsVisible="True"
+                             PaneDisplayMode="Left"
+                             OpenPaneLength="220"
+                             SelectionChanged="Nav_SelectionChanged">
+            <muxc:NavigationView.MenuItems>
+                <muxc:NavigationViewItem Content="Descargas" Tag="downloads" IsSelected="True">
+                    <muxc:NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE896;" />
+                    </muxc:NavigationViewItem.Icon>
+                </muxc:NavigationViewItem>
+                <muxc:NavigationViewItem Content="Biblioteca" Tag="library">
+                    <muxc:NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE8F1;" />
+                    </muxc:NavigationViewItem.Icon>
+                </muxc:NavigationViewItem>
+            </muxc:NavigationView.MenuItems>
+
+            <Frame x:Name="ContentFrame" />
+        </muxc:NavigationView>
+    </Grid>
 </Window>

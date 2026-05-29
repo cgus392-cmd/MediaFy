@@ -4,11 +4,11 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Windows.Storage.Pickers;
 
-namespace YTDownloader;
+namespace YTDownloader.Views;
 
-public sealed partial class SettingsDialog : ContentDialog
+public sealed partial class SettingsPage : Page
 {
-    public SettingsDialog()
+    public SettingsPage()
     {
         InitializeComponent();
         TxtFolder.Text = App.DownloadManager.OutputFolder;
@@ -21,14 +21,12 @@ public sealed partial class SettingsDialog : ContentDialog
         {
             string path = Path.Combine(AppContext.BaseDirectory, "Assets", "yt-dlp.exe");
             if (!File.Exists(path)) { TxtYtDlpVersion.Text = "No encontrado en Assets/"; return; }
-
             using var proc = Process.Start(new ProcessStartInfo
             {
                 FileName = path, Arguments = "--version",
                 RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true
             })!;
-            string ver = (await proc.StandardOutput.ReadToEndAsync()).Trim();
-            TxtYtDlpVersion.Text = $"Versión instalada: {ver}";
+            TxtYtDlpVersion.Text = $"Versión instalada: {(await proc.StandardOutput.ReadToEndAsync()).Trim()}";
         }
         catch { TxtYtDlpVersion.Text = "Error al leer la versión"; }
     }
@@ -37,33 +35,21 @@ public sealed partial class SettingsDialog : ContentDialog
     {
         var picker = new FolderPicker();
         picker.FileTypeFilter.Add("*");
-
-        // Interop: el picker necesita el HWND de la ventana principal (app unpackaged)
         var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
         WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
 
         var folder = await picker.PickSingleFolderAsync();
         if (folder != null)
-            TxtFolder.Text = folder.Path;
-    }
-
-    private void OnThemeChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (App.MainWindow?.Content is not FrameworkElement root) return;
-        var tag = (string)((ComboBoxItem)CboTheme.SelectedItem).Tag;
-        root.RequestedTheme = tag switch
         {
-            "Light"   => ElementTheme.Light,
-            "Default" => ElementTheme.Default,
-            _         => ElementTheme.Dark
-        };
+            TxtFolder.Text = folder.Path;
+            App.DownloadManager.OutputFolder = folder.Path;
+        }
     }
 
     private async void OnUpdateYtDlp(object sender, RoutedEventArgs e)
     {
         string path = Path.Combine(AppContext.BaseDirectory, "Assets", "yt-dlp.exe");
         if (!File.Exists(path)) return;
-
         TxtYtDlpVersion.Text = "Actualizando...";
         try
         {
@@ -76,10 +62,5 @@ public sealed partial class SettingsDialog : ContentDialog
             await LoadYtDlpVersionAsync();
         }
         catch { TxtYtDlpVersion.Text = "Error al actualizar"; }
-    }
-
-    private void OnSave(ContentDialog sender, ContentDialogButtonClickEventArgs args)
-    {
-        App.DownloadManager.OutputFolder = TxtFolder.Text;
     }
 }

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="YTDownloader.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="Transparent">
+    <Grid Margin="28,12,28,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Configuración" FontSize="28" FontWeight="SemiBold" Margin="0,0,0,16" />
+
+        <StackPanel Grid.Row="1" Spacing="12">
+
+            <!-- Carpeta -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="16">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="10" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <FontIcon Glyph="&#xE8B7;" FontSize="18" VerticalAlignment="Center" />
+                        <StackPanel>
+                            <TextBlock Text="Carpeta de descargas" FontWeight="SemiBold" />
+                            <TextBlock Text="Dónde se guardan los archivos" FontSize="12"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                    </StackPanel>
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="TxtFolder" IsReadOnly="True" VerticalAlignment="Center" />
+                        <Button Grid.Column="2" Content="Cambiar" Click="OnBrowse" />
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- yt-dlp -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="16">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE896;" FontSize="18" VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="yt-dlp" FontWeight="SemiBold" />
+                        <TextBlock x:Name="TxtYtDlpVersion" Text="Comprobando versión..." FontSize="12"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                    <Button Grid.Column="2" Content="Actualizar" Click="OnUpdateYtDlp" />
+                </Grid>
+            </Border>
+
+            <!-- Info tema -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="16">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <FontIcon Glyph="&#xE790;" FontSize="18" VerticalAlignment="Center" />
+                    <StackPanel>
+                        <TextBlock Text="Tema y color" FontWeight="SemiBold" />
+                        <TextBlock Text="La app sigue automáticamente el tema y color de acento de Windows"
+                                   FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </Grid>
+</Page>
