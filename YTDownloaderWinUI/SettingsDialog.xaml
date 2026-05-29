@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="YTDownloader.SettingsDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Configuración"
+    PrimaryButtonText="Guardar"
+    CloseButtonText="Cancelar"
+    DefaultButton="Primary"
+    PrimaryButtonClick="OnSave">
+
+    <StackPanel Spacing="12" Width="440">
+
+        <!-- Carpeta -->
+        <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1" CornerRadius="8" Padding="14">
+            <StackPanel Spacing="10">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <FontIcon Glyph="&#xE8B7;" FontSize="18" VerticalAlignment="Center" />
+                    <StackPanel>
+                        <TextBlock Text="Carpeta de descargas" FontWeight="SemiBold" />
+                        <TextBlock Text="Dónde se guardan los archivos" FontSize="12"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                </StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="8" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="TxtFolder" IsReadOnly="True" VerticalAlignment="Center" />
+                    <Button Grid.Column="2" Content="Cambiar" Click="OnBrowse" />
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- Tema -->
+        <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1" CornerRadius="8" Padding="14">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <FontIcon Glyph="&#xE771;" FontSize="18" VerticalAlignment="Center" Margin="0,0,12,0" />
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="Tema" FontWeight="SemiBold" />
+                    <TextBlock Text="Apariencia de la aplicación" FontSize="12"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+                <ComboBox Grid.Column="2" x:Name="CboTheme" Width="150"
+                          VerticalAlignment="Center" SelectionChanged="OnThemeChanged">
+                    <ComboBoxItem Content="Oscuro" Tag="Dark" IsSelected="True" />
+                    <ComboBoxItem Content="Claro" Tag="Light" />
+                    <ComboBoxItem Content="Sistema" Tag="Default" />
+                </ComboBox>
+            </Grid>
+        </Border>
+
+        <!-- yt-dlp -->
+        <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1" CornerRadius="8" Padding="14">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <FontIcon Glyph="&#xE896;" FontSize="18" VerticalAlignment="Center" Margin="0,0,12,0" />
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="yt-dlp" FontWeight="SemiBold" />
+                    <TextBlock x:Name="TxtYtDlpVersion" Text="Comprobando versión..." FontSize="12"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+                <Button Grid.Column="2" x:Name="BtnUpdate" Content="Actualizar" Click="OnUpdateYtDlp" />
+            </Grid>
+        </Border>
+    </StackPanel>
+</ContentDialog>
