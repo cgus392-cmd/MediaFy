@@ -37,7 +37,9 @@ public class StatusToForegroundConverter : IValueConverter
             DownloadStatus.Error       => Color.FromArgb(255, 0xFF, 0x6B, 0x6B),
             DownloadStatus.Downloading => Color.FromArgb(255, 0x60, 0xCD, 0xFF),
             DownloadStatus.Fetching    => Color.FromArgb(255, 0x60, 0xCD, 0xFF),
+            DownloadStatus.Queued      => Color.FromArgb(255, 0xC0, 0xC0, 0xC0),
             DownloadStatus.Converting  => Color.FromArgb(255, 0xB4, 0xA0, 0xFF),
+            DownloadStatus.Canceled    => Color.FromArgb(255, 0xFF, 0xB0, 0x5C),
             _                          => Color.FromArgb(255, 0xC0, 0xC0, 0xC0),
         } : Colors.Gray;
         return new SolidColorBrush(c);
@@ -56,6 +58,7 @@ public class StatusToBackgroundConverter : IValueConverter
             DownloadStatus.Downloading => Color.FromArgb(0x26, 0x00, 0x78, 0xD4),
             DownloadStatus.Fetching    => Color.FromArgb(0x26, 0x00, 0x78, 0xD4),
             DownloadStatus.Converting  => Color.FromArgb(0x26, 0x74, 0x4D, 0xA9),
+            DownloadStatus.Canceled    => Color.FromArgb(0x26, 0xFF, 0xB0, 0x5C),
             _                          => Color.FromArgb(0x18, 0x80, 0x80, 0x80),
         } : Color.FromArgb(0x18, 0x80, 0x80, 0x80);
         return new SolidColorBrush(c);

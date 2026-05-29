@@ -19,6 +19,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
@@ -52,9 +53,97 @@
             </Grid>
         </Border>
 
-        <!-- Formato / Calidad / Descargar -->
-        <Grid Grid.Row="2" Margin="0,14,0,0">
+        <!-- ══ Vista previa (Fase 3) ══ -->
+        <Border Grid.Row="2" x:Name="PreviewCard" Visibility="Collapsed"
+                Margin="0,12,0,0"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1" CornerRadius="8" Padding="14">
+            <Grid>
+                <!-- Estado: cargando -->
+                <StackPanel x:Name="PreviewLoading" Orientation="Horizontal" Spacing="12"
+                            VerticalAlignment="Center" Visibility="Collapsed">
+                    <ProgressRing IsActive="True" Width="22" Height="22" />
+                    <TextBlock Text="Analizando enlace..." VerticalAlignment="Center"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+
+                <!-- Estado: error -->
+                <StackPanel x:Name="PreviewError" Orientation="Horizontal" Spacing="10"
+                            VerticalAlignment="Center" Visibility="Collapsed">
+                    <FontIcon Glyph="&#xEA39;" FontSize="16"
+                              Foreground="{ThemeResource SystemFillColorCautionBrush}" />
+                    <TextBlock x:Name="PreviewErrorText" Text="No se pudo analizar el enlace"
+                               VerticalAlignment="Center"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+
+                <!-- Estado: info -->
+                <Grid x:Name="PreviewInfo" Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Width="128" Height="72" CornerRadius="6" VerticalAlignment="Top"
+                            Background="{ThemeResource ControlFillColorSecondaryBrush}">
+                        <Image x:Name="PreviewThumb" Stretch="UniformToFill" />
+                    </Border>
+
+                    <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Top">
+                        <TextBlock x:Name="PreviewTitle" FontSize="15" FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis" MaxLines="2" TextWrapping="Wrap" />
+                        <StackPanel Orientation="Horizontal" Spacing="14" Margin="0,4,0,0">
+                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                <FontIcon Glyph="&#xE77B;" FontSize="12"
+                                          Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <TextBlock x:Name="PreviewUploader" FontSize="12"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                <FontIcon Glyph="&#xE916;" FontSize="12"
+                                          Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <TextBlock x:Name="PreviewDuration" FontSize="12"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                <FontIcon Glyph="&#xE73E;" FontSize="12"
+                                          Foreground="{ThemeResource SystemFillColorSuccessBrush}" />
+                                <TextBlock Text="Listo para descargar" FontSize="12"
+                                           Foreground="{ThemeResource SystemFillColorSuccessBrush}" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Calidades disponibles como chips -->
+                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,10,0,0">
+                            <TextBlock Text="Calidades:" FontSize="12" VerticalAlignment="Center"
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                            <ItemsControl x:Name="PreviewQualities">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" Spacing="6" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="x:String">
+                                        <Border Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                                                CornerRadius="4" Padding="8,2">
+                                            <TextBlock Text="{x:Bind}" FontSize="11" />
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- Formato / Calidad / Simultáneas / Descargar -->
+        <Grid Grid.Row="3" Margin="0,14,0,0">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="14" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="14" />
                 <ColumnDefinition Width="Auto" />
@@ -87,7 +176,19 @@
                 </ComboBox>
             </StackPanel>
 
-            <Button Grid.Column="4" x:Name="BtnDownload" Click="BtnDownload_Click"
+            <StackPanel Grid.Column="4">
+                <TextBlock Text="SIMULTÁNEAS" FontSize="11" FontWeight="SemiBold"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="2,0,0,4" />
+                <ComboBox x:Name="CboConcurrent" Width="80" SelectionChanged="CboConcurrent_SelectionChanged">
+                    <ComboBoxItem Content="1" />
+                    <ComboBoxItem Content="2" />
+                    <ComboBoxItem Content="3" IsSelected="True" />
+                    <ComboBoxItem Content="4" />
+                    <ComboBoxItem Content="5" />
+                </ComboBox>
+            </StackPanel>
+
+            <Button Grid.Column="6" x:Name="BtnDownload" Click="BtnDownload_Click"
                     Style="{ThemeResource AccentButtonStyle}"
                     MinWidth="150" VerticalAlignment="Bottom">
                 <StackPanel Orientation="Horizontal" Spacing="8">
@@ -98,7 +199,7 @@
         </Grid>
 
         <!-- Cabecera lista -->
-        <Grid Grid.Row="3" Margin="0,24,0,0">
+        <Grid Grid.Row="4" Margin="0,24,0,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
@@ -155,45 +256,95 @@
                         <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                 BorderThickness="1" CornerRadius="8" Padding="14,12">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
 
-                                <Border Width="64" Height="42" CornerRadius="6"
-                                        VerticalAlignment="Center"
-                                        Background="{ThemeResource ControlFillColorSecondaryBrush}">
-                                    <Image Stretch="UniformToFill"
-                                           Source="{x:Bind Thumbnail, Mode=OneWay, Converter={StaticResource StrBmp}}" />
-                                </Border>
+                                    <Border Width="64" Height="42" CornerRadius="6"
+                                            VerticalAlignment="Center"
+                                            Background="{ThemeResource ControlFillColorSecondaryBrush}">
+                                        <Image Stretch="UniformToFill"
+                                               Source="{x:Bind Thumbnail, Mode=OneWay, Converter={StaticResource StrBmp}}" />
+                                    </Border>
 
-                                <StackPanel Grid.Column="1" Margin="14,0,14,0" VerticalAlignment="Center">
-                                    <TextBlock Text="{x:Bind Title, Mode=OneWay}"
-                                               FontSize="13" FontWeight="SemiBold"
-                                               TextTrimming="CharacterEllipsis" MaxLines="1" />
-                                    <TextBlock FontSize="12" Margin="0,3,0,0"
-                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}">
-                                        <Run Text="{x:Bind Format, Mode=OneWay}" />
-                                        <Run Text=" · " />
-                                        <Run Text="{x:Bind Quality, Mode=OneWay}" />
-                                        <Run Text=" · " />
-                                        <Run Text="{x:Bind Duration, Mode=OneWay}" />
-                                    </TextBlock>
-                                    <ProgressBar Margin="0,8,0,0"
-                                                 Value="{x:Bind Progress, Mode=OneWay}"
-                                                 Minimum="0" Maximum="100"
-                                                 Visibility="{x:Bind IsActive, Mode=OneWay, Converter={StaticResource BoolVis}}" />
-                                </StackPanel>
+                                    <StackPanel Grid.Column="1" Margin="14,0,14,0" VerticalAlignment="Center">
+                                        <TextBlock Text="{x:Bind Title, Mode=OneWay}"
+                                                   FontSize="13" FontWeight="SemiBold"
+                                                   TextTrimming="CharacterEllipsis" MaxLines="1" />
+                                        <TextBlock FontSize="12" Margin="0,3,0,0"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}">
+                                            <Run Text="{x:Bind Format, Mode=OneWay}" />
+                                            <Run Text=" · " />
+                                            <Run Text="{x:Bind Quality, Mode=OneWay}" />
+                                            <Run Text=" · " />
+                                            <Run Text="{x:Bind Duration, Mode=OneWay}" />
+                                        </TextBlock>
+                                        <ProgressBar Margin="0,8,0,0"
+                                                     Value="{x:Bind Progress, Mode=OneWay}"
+                                                     Minimum="0" Maximum="100"
+                                                     Visibility="{x:Bind IsActive, Mode=OneWay, Converter={StaticResource BoolVis}}" />
+                                        <!-- Velocidad · ETA · tamaño -->
+                                        <TextBlock Text="{x:Bind DetailLine, Mode=OneWay}"
+                                                   FontSize="11" Margin="0,5,0,0"
+                                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                   Visibility="{x:Bind ShowDetails, Mode=OneWay, Converter={StaticResource BoolVis}}" />
+                                    </StackPanel>
 
-                                <Border Grid.Column="2" CornerRadius="20" Padding="14,5"
-                                        VerticalAlignment="Center"
-                                        Background="{x:Bind Status, Mode=OneWay, Converter={StaticResource StatusBg}}">
-                                    <TextBlock Text="{x:Bind StatusText, Mode=OneWay}" FontSize="12"
-                                               Foreground="{x:Bind Status, Mode=OneWay, Converter={StaticResource StatusFg}}" />
-                                </Border>
-                            </Grid>
+                                    <!-- Badge -->
+                                    <Border Grid.Column="2" CornerRadius="20" Padding="14,5"
+                                            VerticalAlignment="Center" Margin="0,0,8,0"
+                                            Background="{x:Bind Status, Mode=OneWay, Converter={StaticResource StatusBg}}">
+                                        <TextBlock Text="{x:Bind StatusText, Mode=OneWay}" FontSize="12"
+                                                   Foreground="{x:Bind Status, Mode=OneWay, Converter={StaticResource StatusFg}}" />
+                                    </Border>
+
+                                    <!-- Acciones -->
+                                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Button Click="BtnCancel_Click" Tag="{x:Bind}"
+                                                Background="Transparent" BorderThickness="0"
+                                                Width="36" Height="36" Padding="0"
+                                                ToolTipService.ToolTip="Cancelar"
+                                                Visibility="{x:Bind CanCancel, Mode=OneWay, Converter={StaticResource BoolVis}}">
+                                            <FontIcon Glyph="&#xE711;" FontSize="14" />
+                                        </Button>
+                                        <Button Click="BtnRetry_Click" Tag="{x:Bind}"
+                                                Background="Transparent" BorderThickness="0"
+                                                Width="36" Height="36" Padding="0"
+                                                ToolTipService.ToolTip="Reintentar"
+                                                Visibility="{x:Bind CanRetry, Mode=OneWay, Converter={StaticResource BoolVis}}">
+                                            <FontIcon Glyph="&#xE72C;" FontSize="14" />
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Panel de logs (solo si se activa en Configuración) -->
+                                <Expander Margin="0,10,0,0" HorizontalAlignment="Stretch"
+                                          HorizontalContentAlignment="Stretch"
+                                          Background="Transparent"
+                                          Visibility="{x:Bind ShowLogs, Mode=OneWay, Converter={StaticResource BoolVis}}">
+                                    <Expander.Header>
+                                        <TextBlock Text="Registro" FontSize="12"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </Expander.Header>
+                                    <ScrollViewer MaxHeight="160" VerticalScrollBarVisibility="Auto">
+                                        <ItemsControl ItemsSource="{x:Bind Logs}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="x:String">
+                                                    <TextBlock Text="{x:Bind}" FontSize="11"
+                                                               FontFamily="Consolas"
+                                                               TextWrapping="Wrap"
+                                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </Expander>
+                            </StackPanel>
                         </Border>
                     </DataTemplate>
                 </ListView.ItemTemplate>
@@ -201,7 +352,7 @@
         </Grid>
 
         <!-- Footer -->
-        <Border Grid.Row="4" Padding="0,10,0,14" Margin="0,12,0,0"
+        <Border Grid.Row="5" Padding="0,10,0,14" Margin="0,12,0,0"
                 BorderThickness="0,1,0,0"
                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
             <Grid>
