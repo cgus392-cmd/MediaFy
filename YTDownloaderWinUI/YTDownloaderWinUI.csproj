@@ -15,7 +15,8 @@
     <SelfContained>true</SelfContained>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <AssemblyName>YTDownloader</AssemblyName>
+    <AssemblyName>MediaFy</AssemblyName>
+    <ApplicationIcon>Assets\logo.ico</ApplicationIcon>
     <EnableMsixTooling>true</EnableMsixTooling>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
@@ -34,6 +35,10 @@
     <None Update="Assets\ffmpeg.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Assets\logo.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <Content Include="Assets\logo.png" />
   </ItemGroup>
 
 </Project>

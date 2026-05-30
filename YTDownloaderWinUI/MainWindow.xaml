@@ -14,11 +14,13 @@
 
         <!-- Barra de título -->
         <Grid x:Name="AppTitleBar" Grid.Row="0" Height="44" Background="Transparent">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0">
-                <FontIcon Glyph="&#xEBD3;" FontSize="16"
-                          Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
-                <TextBlock Text="YT Downloader" FontSize="13" FontWeight="SemiBold"
-                           VerticalAlignment="Center" Margin="10,0,0,0" />
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0" Spacing="10">
+                <Image Source="ms-appx:///Assets/logo.png" Width="20" Height="20" />
+                <TextBlock VerticalAlignment="Center">
+                    <Run Text="MediaFy" FontWeight="SemiBold" FontSize="13" />
+                    <Run Text="by CG" FontSize="11"
+                         Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                </TextBlock>
             </StackPanel>
         </Grid>
 
@@ -91,8 +93,17 @@
                 </Border>
             </muxc:NavigationView.PaneFooter>
 
+            <muxc:NavigationView.FooterMenuItems>
+                <muxc:NavigationViewItem Content="Acerca de" Tag="about">
+                    <muxc:NavigationViewItem.Icon><FontIcon Glyph="&#xE946;" /></muxc:NavigationViewItem.Icon>
+                </muxc:NavigationViewItem>
+            </muxc:NavigationView.FooterMenuItems>
+
             <muxc:NavigationView.MenuItems>
-                <muxc:NavigationViewItem Content="Descargas" Tag="downloads" IsSelected="True">
+                <muxc:NavigationViewItem Content="Inicio" Tag="home" IsSelected="True">
+                    <muxc:NavigationViewItem.Icon><FontIcon Glyph="&#xE80F;" /></muxc:NavigationViewItem.Icon>
+                </muxc:NavigationViewItem>
+                <muxc:NavigationViewItem Content="Descargas" Tag="downloads">
                     <muxc:NavigationViewItem.Icon><FontIcon Glyph="&#xE896;" /></muxc:NavigationViewItem.Icon>
                 </muxc:NavigationViewItem>
                 <muxc:NavigationViewItem Content="Descargas en cascada" Tag="cascade">

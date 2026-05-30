@@ -26,8 +26,9 @@ public sealed partial class MainWindow : Window
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
-        Title = "YT Downloader";
+        Title = "MediaFy";
         AppWindow.Resize(new SizeInt32(1000, 740));
+        try { AppWindow.SetIcon(System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "logo.ico")); } catch { }
 
         _backdrop = new BackdropManager(this);
         _backdrop.Apply(AppSettings.Current.BackdropKind);
@@ -37,7 +38,7 @@ public sealed partial class MainWindow : Window
             _onLibrary = e.SourcePageType == typeof(LibraryPage);
             UpdatePlayersVisibility();
         };
-        ContentFrame.Navigate(typeof(DownloadsPage));
+        ContentFrame.Navigate(typeof(HomePage));
 
         SyncVolumeSliders();
         App.Playback.Changed += OnPlaybackChanged;
@@ -56,12 +57,21 @@ public sealed partial class MainWindow : Window
         {
             switch (item.Tag?.ToString())
             {
+                case "home":      ContentFrame.Navigate(typeof(HomePage));      break;
                 case "downloads": ContentFrame.Navigate(typeof(DownloadsPage)); break;
                 case "cascade":   ContentFrame.Navigate(typeof(CascadePage));   break;
                 case "library":   ContentFrame.Navigate(typeof(LibraryPage));   break;
                 case "editor":    ContentFrame.Navigate(typeof(EditorPage));    break;
+                case "about":     ContentFrame.Navigate(typeof(AboutPage));     break;
             }
         }
+    }
+
+    /// <summary>Selecciona una sección por su tag (lo usan los accesos rápidos de Inicio).</summary>
+    public void NavigateTo(string tag)
+    {
+        foreach (var obj in Nav.MenuItems)
+            if (obj is NavigationViewItem nvi && (string?)nvi.Tag == tag) { Nav.SelectedItem = nvi; return; }
     }
 
     // ── Reproductor global ─────────────────────────────────────
