@@ -5,22 +5,24 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Background="Transparent">
 
-    <Grid Margin="28,12,28,0">
+    <Grid Margin="28,12,28,12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <!-- Cabecera -->
-        <Grid Grid.Row="0" Margin="0,0,0,16">
+        <Grid Grid.Row="0" Margin="0,0,0,12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <StackPanel>
                 <TextBlock Text="Editor" FontSize="28" FontWeight="SemiBold" />
-                <TextBlock x:Name="TxtFileName" Text="Reproductor y recorte integrado"
+                <TextBlock x:Name="TxtFileName" Text="Reproductor y recorte con forma de onda"
                            FontSize="13" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
             </StackPanel>
@@ -32,33 +34,26 @@
             </Button>
         </Grid>
 
-        <!-- Zona del reproductor -->
-        <Grid Grid.Row="1">
-            <!-- Estado vacío -->
+        <!-- Reproductor -->
+        <Grid Grid.Row="1" MinHeight="180">
             <StackPanel x:Name="EmptyState" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <FontIcon Glyph="&#xE714;" FontSize="52"
                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                 <TextBlock Text="Sin archivo abierto" FontSize="16" FontWeight="SemiBold"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                            HorizontalAlignment="Center" Margin="0,16,0,6" />
-                <TextBlock Text="Abre un archivo desde la Biblioteca o con el botón Abrir archivo"
+                <TextBlock Text="Abre un archivo desde la Biblioteca (botón Editar) o con Abrir archivo"
                            FontSize="13" HorizontalAlignment="Center" TextWrapping="Wrap"
                            Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
             </StackPanel>
 
-            <!-- Reproductor -->
             <Border x:Name="PlayerHost" Visibility="Collapsed"
                     CornerRadius="12" Background="#FF101010"
-                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                    BorderThickness="1">
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                 <Grid>
-                    <MediaPlayerElement x:Name="Player"
-                                        AreTransportControlsEnabled="True"
-                                        Stretch="Uniform" />
-                    <!-- Overlay para audio -->
+                    <MediaPlayerElement x:Name="Player" AreTransportControlsEnabled="True" Stretch="Uniform" />
                     <StackPanel x:Name="AudioOverlay" Visibility="Collapsed"
-                                VerticalAlignment="Center" HorizontalAlignment="Center"
-                                IsHitTestVisible="False">
+                                VerticalAlignment="Center" HorizontalAlignment="Center" IsHitTestVisible="False">
                         <FontIcon Glyph="&#xEC4F;" FontSize="64"
                                   Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
                     </StackPanel>
@@ -66,56 +61,133 @@
             </Border>
         </Grid>
 
-        <!-- Panel de recorte -->
-        <Border Grid.Row="2" x:Name="TrimPanel" Visibility="Collapsed"
-                Margin="0,16,0,16"
+        <!-- ══ Forma de onda + selección ══ -->
+        <Border Grid.Row="2" x:Name="WavePanel" Visibility="Collapsed"
+                Margin="0,14,0,0" CornerRadius="10"
                 Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                BorderThickness="1" CornerRadius="10" Padding="16">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1"
+                Padding="2">
+            <ScrollViewer x:Name="WaveScroll" HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Disabled"
+                          HorizontalScrollMode="Enabled" SizeChanged="WaveScroll_SizeChanged">
+                <Canvas x:Name="WaveCanvas" Height="150"
+                        PointerPressed="WaveCanvas_PointerPressed"
+                        PointerMoved="WaveCanvas_PointerMoved"
+                        PointerReleased="WaveCanvas_PointerReleased">
+                    <Image x:Name="WaveImage" Canvas.Left="0" Canvas.Top="0" Height="150" Stretch="Fill" />
 
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                    <Button Click="BtnMarkStart_Click">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <FontIcon Glyph="&#xE893;" FontSize="13" />
-                            <TextBlock Text="Marcar inicio" />
-                        </StackPanel>
-                    </Button>
-                    <Border Background="{ThemeResource ControlFillColorSecondaryBrush}"
-                            CornerRadius="6" Padding="10,6" VerticalAlignment="Center">
-                        <TextBlock x:Name="TxtStart" Text="00:00.000" FontFamily="Consolas" FontSize="13" />
-                    </Border>
-                    <FontIcon Glyph="&#xE76C;" FontSize="12"
-                              Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                    <Border Background="{ThemeResource ControlFillColorSecondaryBrush}"
-                            CornerRadius="6" Padding="10,6" VerticalAlignment="Center">
-                        <TextBlock x:Name="TxtEnd" Text="00:00.000" FontFamily="Consolas" FontSize="13" />
-                    </Border>
-                    <Button Click="BtnMarkEnd_Click">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <FontIcon Glyph="&#xE893;" FontSize="13" />
-                            <TextBlock Text="Marcar fin" />
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
+                    <!-- Zonas oscurecidas (fuera de la selección) -->
+                    <Rectangle x:Name="DimLeft" Canvas.Left="0" Canvas.Top="0" Height="150"
+                               Fill="#99000000" />
+                    <Rectangle x:Name="DimRight" Canvas.Top="0" Height="150" Fill="#99000000" />
 
-                <TextBlock Grid.Column="1" x:Name="TxtTrimStatus" VerticalAlignment="Center"
-                           Margin="16,0" FontSize="12"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <!-- Cursor de reproducción -->
+                    <Rectangle x:Name="Cursor" Canvas.Top="0" Width="2" Height="150"
+                               Fill="{ThemeResource AccentTextFillColorPrimaryBrush}" />
 
-                <Button Grid.Column="2" x:Name="BtnCut" Click="BtnCut_Click"
-                        Style="{ThemeResource AccentButtonStyle}" VerticalAlignment="Center">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon Glyph="&#xE8C6;" FontSize="14" />
-                        <TextBlock Text="Cortar fragmento" />
-                    </StackPanel>
-                </Button>
-            </Grid>
+                    <!-- Manijas de inicio / fin -->
+                    <Border x:Name="StartHandle" Canvas.Top="0" Width="10" Height="150"
+                            Background="#CC22C55E" CornerRadius="3"
+                            PointerPressed="StartHandle_PointerPressed" />
+                    <Border x:Name="EndHandle" Canvas.Top="0" Width="10" Height="150"
+                            Background="#CCEF4444" CornerRadius="3"
+                            PointerPressed="EndHandle_PointerPressed" />
+                </Canvas>
+            </ScrollViewer>
         </Border>
+
+        <!-- ══ Controles de recorte ══ -->
+        <Border Grid.Row="3" x:Name="TrimPanel" Visibility="Collapsed"
+                Margin="0,12,0,0" CornerRadius="10"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1"
+                Padding="16">
+            <StackPanel Spacing="14">
+                <!-- Fila 1: tiempos + reproducir selección -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="20" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Spacing="4">
+                        <TextBlock Text="INICIO (s)" FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <NumberBox x:Name="NumStart" Width="150" Minimum="0"
+                                   SmallChange="0.1" LargeChange="1"
+                                   SpinButtonPlacementMode="Inline"
+                                   ValueChanged="NumStart_ValueChanged" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Spacing="4">
+                        <TextBlock Text="FIN (s)" FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <NumberBox x:Name="NumEnd" Width="150" Minimum="0"
+                                   SmallChange="0.1" LargeChange="1"
+                                   SpinButtonPlacementMode="Inline"
+                                   ValueChanged="NumEnd_ValueChanged" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="10" VerticalAlignment="Bottom">
+                        <Button Click="BtnPlaySelection_Click">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE768;" FontSize="13" />
+                                <TextBlock Text="Reproducir selección" />
+                            </StackPanel>
+                        </Button>
+                        <TextBlock x:Name="TxtSelLen" VerticalAlignment="Center" FontSize="13"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                </Grid>
+
+                <!-- Fila 2: zoom + fades -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="180" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <FontIcon Grid.Column="0" Glyph="&#xE71E;" FontSize="14" VerticalAlignment="Center"
+                              Margin="0,0,8,0" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <Slider Grid.Column="1" x:Name="ZoomSlider" Minimum="1" Maximum="8" Value="1"
+                            StepFrequency="0.5" VerticalAlignment="Center"
+                            ValueChanged="ZoomSlider_ValueChanged" />
+
+                    <CheckBox Grid.Column="3" x:Name="ChkFadeIn" Content="Fade in" VerticalAlignment="Center" />
+                    <CheckBox Grid.Column="4" x:Name="ChkFadeOut" Content="Fade out" VerticalAlignment="Center"
+                              Margin="12,0" />
+                    <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <TextBlock Text="Dur (s):" VerticalAlignment="Center" FontSize="12"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <NumberBox x:Name="NumFade" Width="90" Value="1" Minimum="0.1" Maximum="10"
+                                   SmallChange="0.5" SpinButtonPlacementMode="Inline" />
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- ══ Acción de corte ══ -->
+        <Grid Grid.Row="4" x:Name="ActionPanel" Visibility="Collapsed" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="TxtTrimStatus" VerticalAlignment="Center" FontSize="13"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            <Button Grid.Column="1" x:Name="BtnCut" Click="BtnCut_Click"
+                    Style="{ThemeResource AccentButtonStyle}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="&#xE8C6;" FontSize="14" />
+                    <TextBlock Text="Cortar fragmento" />
+                </StackPanel>
+            </Button>
+        </Grid>
     </Grid>
 </Page>
