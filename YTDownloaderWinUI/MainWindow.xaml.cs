@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Navigation;
 using Windows.Foundation;
 using Windows.Graphics;
 using Windows.Media.Casting;
+using YTDownloader.Core;
 using YTDownloader.Views;
 
 namespace YTDownloader;
@@ -13,6 +14,7 @@ public sealed partial class MainWindow : Window
 {
     private bool _onLibrary;
     private bool _volSync;
+    private BackdropManager? _backdrop;
 
     // Suavizado del VU (sobre niveles REALES del servicio)
     private readonly DispatcherTimer _vuTimer = new() { Interval = TimeSpan.FromMilliseconds(50) };
@@ -27,6 +29,9 @@ public sealed partial class MainWindow : Window
         Title = "YT Downloader";
         AppWindow.Resize(new SizeInt32(1000, 740));
 
+        _backdrop = new BackdropManager(this);
+        _backdrop.Apply(AppSettings.Current.BackdropKind);
+
         ContentFrame.Navigated += (_, e) =>
         {
             _onLibrary = e.SourcePageType == typeof(LibraryPage);
@@ -40,6 +45,9 @@ public sealed partial class MainWindow : Window
         _vuTimer.Tick += VuTimer_Tick;
         _vuTimer.Start();
     }
+
+    /// <summary>Aplica el telón de fondo a toda la ventana en vivo.</summary>
+    public void ApplyBackdrop(BackdropKind kind) => _backdrop?.Apply(kind);
 
     private void Nav_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {

@@ -10,6 +10,9 @@ public enum PlayerMode { Ask, Integrated, System }
 /// <summary>Cómo guardar el resultado de un corte.</summary>
 public enum CutSaveMode { Ask, NewCopy, Replace }
 
+/// <summary>Material de fondo de la ventana (telón de fondo).</summary>
+public enum BackdropKind { Mica, MicaAlt, Acrylic, AcrylicThin, None }
+
 /// <summary>
 /// Configuración persistente de la app. Singleton accesible desde XAML vía
 /// AppSettings.Current. Se guarda en %LocalAppData%\YTDownloader\settings.json.
@@ -27,6 +30,7 @@ public partial class AppSettings : ObservableObject
     [ObservableProperty] private int _cascadeThreshold = 70;
     [ObservableProperty] private PlayerMode _playerMode = PlayerMode.Ask;
     [ObservableProperty] private CutSaveMode _cutSaveMode = CutSaveMode.Ask;
+    [ObservableProperty] private BackdropKind _backdropKind = BackdropKind.Mica;
     [ObservableProperty] private string _outputFolder = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", "YTDownloader");
 

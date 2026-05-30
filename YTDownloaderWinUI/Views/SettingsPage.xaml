@@ -15,6 +15,33 @@
 
         <StackPanel Grid.Row="1" Spacing="12">
 
+            <!-- Apariencia (telón de fondo) -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="16">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE771;" FontSize="18" VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Telón de fondo" FontWeight="SemiBold" />
+                        <TextBlock Text="Material translúcido de toda la ventana"
+                                   FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                    <ComboBox Grid.Column="2" x:Name="CboBackdrop" Width="170"
+                              VerticalAlignment="Center" SelectionChanged="OnBackdropChanged">
+                        <ComboBoxItem Content="Mica" Tag="Mica" />
+                        <ComboBoxItem Content="Mica Alt" Tag="MicaAlt" />
+                        <ComboBoxItem Content="Acrílico" Tag="Acrylic" />
+                        <ComboBoxItem Content="Acrílico fino" Tag="AcrylicThin" />
+                        <ComboBoxItem Content="Ninguno" Tag="None" />
+                    </ComboBox>
+                </Grid>
+            </Border>
+
             <!-- Carpeta -->
             <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"

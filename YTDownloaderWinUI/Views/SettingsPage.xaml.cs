@@ -21,8 +21,19 @@ public sealed partial class SettingsPage : Page
         // Restaura modo de reproductor y de corte
         SelectByTag(CboPlayer, Core.AppSettings.Current.PlayerMode.ToString());
         SelectByTag(CboCut, Core.AppSettings.Current.CutSaveMode.ToString());
+        SelectByTag(CboBackdrop, Core.AppSettings.Current.BackdropKind.ToString());
 
         _ = LoadYtDlpVersionAsync();
+    }
+
+    private void OnBackdropChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (CboBackdrop.SelectedItem is ComboBoxItem item &&
+            Enum.TryParse<Core.BackdropKind>((string?)item.Tag, out var kind))
+        {
+            Core.AppSettings.Current.BackdropKind = kind;
+            (App.MainWindow as MainWindow)?.ApplyBackdrop(kind);
+        }
     }
 
     private static void SelectByTag(ComboBox combo, string tag)
