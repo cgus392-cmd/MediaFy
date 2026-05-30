@@ -18,7 +18,17 @@ public sealed partial class SettingsPage : Page
         foreach (ComboBoxItem ci in CboThreshold.Items)
             if ((string?)ci.Tag == threshold.ToString()) { ci.IsSelected = true; break; }
 
+        // Restaura modo de reproductor y de corte
+        SelectByTag(CboPlayer, Core.AppSettings.Current.PlayerMode.ToString());
+        SelectByTag(CboCut, Core.AppSettings.Current.CutSaveMode.ToString());
+
         _ = LoadYtDlpVersionAsync();
+    }
+
+    private static void SelectByTag(ComboBox combo, string tag)
+    {
+        foreach (ComboBoxItem ci in combo.Items)
+            if ((string?)ci.Tag == tag) { ci.IsSelected = true; break; }
     }
 
     private void OnThresholdChanged(object sender, SelectionChangedEventArgs e)
@@ -26,6 +36,20 @@ public sealed partial class SettingsPage : Page
         if (CboThreshold.SelectedItem is ComboBoxItem item &&
             int.TryParse((string?)item.Tag, out int v))
             Core.AppSettings.Current.CascadeThreshold = v;
+    }
+
+    private void OnPlayerChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (CboPlayer.SelectedItem is ComboBoxItem item &&
+            Enum.TryParse<Core.PlayerMode>((string?)item.Tag, out var m))
+            Core.AppSettings.Current.PlayerMode = m;
+    }
+
+    private void OnCutChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (CboCut.SelectedItem is ComboBoxItem item &&
+            Enum.TryParse<Core.CutSaveMode>((string?)item.Tag, out var m))
+            Core.AppSettings.Current.CutSaveMode = m;
     }
 
     private async Task LoadYtDlpVersionAsync()

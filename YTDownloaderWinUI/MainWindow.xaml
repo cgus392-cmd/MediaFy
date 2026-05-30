@@ -13,9 +13,10 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Barra de título personalizada (arrastrable) -->
+        <!-- Barra de título -->
         <Grid x:Name="AppTitleBar" Grid.Row="0" Height="44" Background="Transparent">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0">
                 <FontIcon Glyph="&#xEBD3;" FontSize="16"
@@ -32,25 +33,162 @@
                              PaneDisplayMode="Left"
                              OpenPaneLength="220"
                              SelectionChanged="Nav_SelectionChanged">
+
+            <!-- Cuadrito compacto (fuera de Biblioteca) -->
+            <muxc:NavigationView.PaneFooter>
+                <Border x:Name="MiniPlayer" Visibility="Collapsed"
+                        Margin="8,4,8,8" Padding="10,10" CornerRadius="10"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1">
+                    <Border.Background>
+                        <AcrylicBrush TintColor="{ThemeResource SolidBackgroundFillColorBase}"
+                                      TintOpacity="0.4" TintLuminosityOpacity="0.9"
+                                      FallbackColor="{ThemeResource SolidBackgroundFillColorSecondary}" />
+                    </Border.Background>
+                    <StackPanel Spacing="10">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Border Width="28" Height="28" CornerRadius="6" VerticalAlignment="Center"
+                                    Background="{ThemeResource ControlFillColorSecondaryBrush}">
+                                <FontIcon Glyph="&#xEC4F;" FontSize="13"
+                                          Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                            </Border>
+                            <TextBlock x:Name="GpMiniName" Text="" FontSize="12" FontWeight="SemiBold"
+                                       VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis" MaxLines="1" Width="118" />
+                        </StackPanel>
+
+                        <!-- VU meter real (2 canales) -->
+                        <StackPanel Spacing="4">
+                            <Grid Height="6">
+                                <Border CornerRadius="3" Background="{ThemeResource ControlFillColorSecondaryBrush}" />
+                                <Border x:Name="GpVuLeft" CornerRadius="3" HorizontalAlignment="Left" Width="0"
+                                        Background="{ThemeResource AccentFillColorDefaultBrush}" />
+                            </Grid>
+                            <Grid Height="6">
+                                <Border CornerRadius="3" Background="{ThemeResource ControlFillColorSecondaryBrush}" />
+                                <Border x:Name="GpVuRight" CornerRadius="3" HorizontalAlignment="Left" Width="0"
+                                        Background="{ThemeResource AccentFillColorDefaultBrush}" />
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                            <Button Click="Gp_PlayPause_Click" Background="Transparent" BorderThickness="0"
+                                    Width="36" Height="36" Padding="0" ToolTipService.ToolTip="Reproducir / pausar">
+                                <FontIcon x:Name="GpMiniPlayIcon" Glyph="&#xE769;" FontSize="15" />
+                            </Button>
+                            <Button Background="Transparent" BorderThickness="0"
+                                    Width="36" Height="36" Padding="0" ToolTipService.ToolTip="Volumen">
+                                <FontIcon Glyph="&#xE767;" FontSize="14" />
+                                <Button.Flyout>
+                                    <Flyout>
+                                        <Slider x:Name="GpMiniVolume" Width="140" Minimum="0" Maximum="100"
+                                                ValueChanged="Gp_Volume_Changed" />
+                                    </Flyout>
+                                </Button.Flyout>
+                            </Button>
+                            <Button Click="Gp_Cast_Click" Background="Transparent" BorderThickness="0"
+                                    Width="36" Height="36" Padding="0" ToolTipService.ToolTip="Transmitir a dispositivo">
+                                <FontIcon Glyph="&#xEC15;" FontSize="14" />
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </muxc:NavigationView.PaneFooter>
+
             <muxc:NavigationView.MenuItems>
                 <muxc:NavigationViewItem Content="Descargas" Tag="downloads" IsSelected="True">
-                    <muxc:NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE896;" />
-                    </muxc:NavigationViewItem.Icon>
+                    <muxc:NavigationViewItem.Icon><FontIcon Glyph="&#xE896;" /></muxc:NavigationViewItem.Icon>
                 </muxc:NavigationViewItem>
                 <muxc:NavigationViewItem Content="Descargas en cascada" Tag="cascade">
-                    <muxc:NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xEC4A;" />
-                    </muxc:NavigationViewItem.Icon>
+                    <muxc:NavigationViewItem.Icon><FontIcon Glyph="&#xEC4A;" /></muxc:NavigationViewItem.Icon>
                 </muxc:NavigationViewItem>
                 <muxc:NavigationViewItem Content="Biblioteca" Tag="library">
-                    <muxc:NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE8F1;" />
-                    </muxc:NavigationViewItem.Icon>
+                    <muxc:NavigationViewItem.Icon><FontIcon Glyph="&#xE8F1;" /></muxc:NavigationViewItem.Icon>
+                </muxc:NavigationViewItem>
+                <muxc:NavigationViewItem Content="Editor" Tag="editor">
+                    <muxc:NavigationViewItem.Icon><FontIcon Glyph="&#xE714;" /></muxc:NavigationViewItem.Icon>
                 </muxc:NavigationViewItem>
             </muxc:NavigationView.MenuItems>
 
             <Frame x:Name="ContentFrame" />
         </muxc:NavigationView>
+
+        <!-- Reproductor expandido (solo en Biblioteca) -->
+        <Border x:Name="GlobalPlayer" Grid.Row="2" Visibility="Collapsed"
+                Margin="12,0,12,12" Height="64" CornerRadius="14"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1">
+            <Border.Background>
+                <AcrylicBrush TintColor="{ThemeResource SolidBackgroundFillColorBase}"
+                              TintOpacity="0.4" TintLuminosityOpacity="0.9"
+                              FallbackColor="{ThemeResource SolidBackgroundFillColorSecondary}" />
+            </Border.Background>
+            <Grid Margin="16,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="80" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <Border Width="40" Height="40" CornerRadius="8" VerticalAlignment="Center"
+                        Background="{ThemeResource ControlFillColorSecondaryBrush}">
+                    <FontIcon Glyph="&#xEC4F;" FontSize="16"
+                              Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                </Border>
+
+                <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center">
+                    <TextBlock x:Name="GpName" Text="" FontSize="13" FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis" MaxLines="1" />
+                    <TextBlock Text="Reproduciendo" FontSize="11"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+
+                <!-- VU meter real (2 canales) -->
+                <StackPanel Grid.Column="2" Spacing="4" VerticalAlignment="Center" Margin="0,0,8,0">
+                    <Grid Height="6">
+                        <Border CornerRadius="3" Background="{ThemeResource ControlFillColorSecondaryBrush}" />
+                        <Border x:Name="GpVuLeftBig" CornerRadius="3" HorizontalAlignment="Left" Width="0"
+                                Background="{ThemeResource AccentFillColorDefaultBrush}" />
+                    </Grid>
+                    <Grid Height="6">
+                        <Border CornerRadius="3" Background="{ThemeResource ControlFillColorSecondaryBrush}" />
+                        <Border x:Name="GpVuRightBig" CornerRadius="3" HorizontalAlignment="Left" Width="0"
+                                Background="{ThemeResource AccentFillColorDefaultBrush}" />
+                    </Grid>
+                </StackPanel>
+
+                <Button Grid.Column="3" Click="Gp_PlayPause_Click"
+                        Background="Transparent" BorderThickness="0"
+                        Width="44" Height="44" Padding="0" VerticalAlignment="Center"
+                        ToolTipService.ToolTip="Reproducir / pausar">
+                    <FontIcon x:Name="GpPlayIcon" Glyph="&#xE769;" FontSize="18" />
+                </Button>
+
+                <FontIcon Grid.Column="4" Glyph="&#xE767;" FontSize="14" Margin="10,0,6,0"
+                          VerticalAlignment="Center"
+                          Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <Slider Grid.Column="5" x:Name="GpVolume" Width="110" Minimum="0" Maximum="100"
+                        VerticalAlignment="Center" ValueChanged="Gp_Volume_Changed" />
+
+                <Button Grid.Column="6" Click="Gp_Cast_Click"
+                        Background="Transparent" BorderThickness="0"
+                        Width="40" Height="40" Padding="0" VerticalAlignment="Center"
+                        Margin="6,0,0,0" ToolTipService.ToolTip="Transmitir a dispositivo">
+                    <FontIcon Glyph="&#xEC15;" FontSize="14" />
+                </Button>
+
+                <Button Grid.Column="7" Click="Gp_Close_Click"
+                        Background="Transparent" BorderThickness="0"
+                        Width="40" Height="40" Padding="0" VerticalAlignment="Center"
+                        ToolTipService.ToolTip="Cerrar">
+                    <FontIcon Glyph="&#xE711;" FontSize="14" />
+                </Button>
+            </Grid>
+        </Border>
     </Grid>
 </Window>

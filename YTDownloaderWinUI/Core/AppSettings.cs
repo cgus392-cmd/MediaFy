@@ -4,6 +4,12 @@ using Newtonsoft.Json;
 
 namespace YTDownloader.Core;
 
+/// <summary>Cómo reproducir un archivo desde la Biblioteca.</summary>
+public enum PlayerMode { Ask, Integrated, System }
+
+/// <summary>Cómo guardar el resultado de un corte.</summary>
+public enum CutSaveMode { Ask, NewCopy, Replace }
+
 /// <summary>
 /// Configuración persistente de la app. Singleton accesible desde XAML vía
 /// AppSettings.Current. Se guarda en %LocalAppData%\YTDownloader\settings.json.
@@ -19,6 +25,8 @@ public partial class AppSettings : ObservableObject
     [ObservableProperty] private bool _showLogs;
     [ObservableProperty] private int _maxConcurrent = 3;
     [ObservableProperty] private int _cascadeThreshold = 70;
+    [ObservableProperty] private PlayerMode _playerMode = PlayerMode.Ask;
+    [ObservableProperty] private CutSaveMode _cutSaveMode = CutSaveMode.Ask;
     [ObservableProperty] private string _outputFolder = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", "YTDownloader");
 

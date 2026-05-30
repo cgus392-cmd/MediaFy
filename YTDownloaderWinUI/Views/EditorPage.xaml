@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="YTDownloader.Views.EditorPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="Transparent">
+
+    <Grid Margin="28,12,28,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Cabecera -->
+        <Grid Grid.Row="0" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="Editor" FontSize="28" FontWeight="SemiBold" />
+                <TextBlock x:Name="TxtFileName" Text="Reproductor y recorte integrado"
+                           FontSize="13" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
+            <Button Grid.Column="1" Click="BtnOpen_Click" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="&#xE8E5;" FontSize="14" />
+                    <TextBlock Text="Abrir archivo" />
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <!-- Zona del reproductor -->
+        <Grid Grid.Row="1">
+            <!-- Estado vacío -->
+            <StackPanel x:Name="EmptyState" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <FontIcon Glyph="&#xE714;" FontSize="52"
+                          Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                <TextBlock Text="Sin archivo abierto" FontSize="16" FontWeight="SemiBold"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           HorizontalAlignment="Center" Margin="0,16,0,6" />
+                <TextBlock Text="Abre un archivo desde la Biblioteca o con el botón Abrir archivo"
+                           FontSize="13" HorizontalAlignment="Center" TextWrapping="Wrap"
+                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+            </StackPanel>
+
+            <!-- Reproductor -->
+            <Border x:Name="PlayerHost" Visibility="Collapsed"
+                    CornerRadius="12" Background="#FF101010"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1">
+                <Grid>
+                    <MediaPlayerElement x:Name="Player"
+                                        AreTransportControlsEnabled="True"
+                                        Stretch="Uniform" />
+                    <!-- Overlay para audio -->
+                    <StackPanel x:Name="AudioOverlay" Visibility="Collapsed"
+                                VerticalAlignment="Center" HorizontalAlignment="Center"
+                                IsHitTestVisible="False">
+                        <FontIcon Glyph="&#xEC4F;" FontSize="64"
+                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Panel de recorte -->
+        <Border Grid.Row="2" x:Name="TrimPanel" Visibility="Collapsed"
+                Margin="0,16,0,16"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1" CornerRadius="10" Padding="16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <Button Click="BtnMarkStart_Click">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE893;" FontSize="13" />
+                            <TextBlock Text="Marcar inicio" />
+                        </StackPanel>
+                    </Button>
+                    <Border Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                            CornerRadius="6" Padding="10,6" VerticalAlignment="Center">
+                        <TextBlock x:Name="TxtStart" Text="00:00.000" FontFamily="Consolas" FontSize="13" />
+                    </Border>
+                    <FontIcon Glyph="&#xE76C;" FontSize="12"
+                              Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                    <Border Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                            CornerRadius="6" Padding="10,6" VerticalAlignment="Center">
+                        <TextBlock x:Name="TxtEnd" Text="00:00.000" FontFamily="Consolas" FontSize="13" />
+                    </Border>
+                    <Button Click="BtnMarkEnd_Click">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE893;" FontSize="13" />
+                            <TextBlock Text="Marcar fin" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <TextBlock Grid.Column="1" x:Name="TxtTrimStatus" VerticalAlignment="Center"
+                           Margin="16,0" FontSize="12"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+
+                <Button Grid.Column="2" x:Name="BtnCut" Click="BtnCut_Click"
+                        Style="{ThemeResource AccentButtonStyle}" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE8C6;" FontSize="14" />
+                        <TextBlock Text="Cortar fragmento" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+    </Grid>
+</Page>

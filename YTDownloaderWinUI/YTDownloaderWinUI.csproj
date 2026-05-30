@@ -17,6 +17,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>YTDownloader</AssemblyName>
     <EnableMsixTooling>true</EnableMsixTooling>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>

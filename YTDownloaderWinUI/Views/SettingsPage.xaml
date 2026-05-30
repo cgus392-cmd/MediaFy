@@ -113,6 +113,56 @@
                 </Grid>
             </Border>
 
+            <!-- Reproductor -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="16">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE768;" FontSize="18" VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Reproductor" FontWeight="SemiBold" />
+                        <TextBlock Text="Con qué reproducir los archivos de la Biblioteca"
+                                   FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                    <ComboBox Grid.Column="2" x:Name="CboPlayer" Width="180"
+                              VerticalAlignment="Center" SelectionChanged="OnPlayerChanged">
+                        <ComboBoxItem Content="Preguntar cada vez" Tag="Ask" />
+                        <ComboBoxItem Content="Reproductor integrado" Tag="Integrated" />
+                        <ComboBoxItem Content="Otro programa" Tag="System" />
+                    </ComboBox>
+                </Grid>
+            </Border>
+
+            <!-- Guardado de corte -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="16">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE8C6;" FontSize="18" VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Guardado de cortes" FontWeight="SemiBold" />
+                        <TextBlock Text="Qué hacer al recortar un fragmento en el Editor"
+                                   FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                    <ComboBox Grid.Column="2" x:Name="CboCut" Width="180"
+                              VerticalAlignment="Center" SelectionChanged="OnCutChanged">
+                        <ComboBoxItem Content="Preguntar cada vez" Tag="Ask" />
+                        <ComboBoxItem Content="Crear copia nueva" Tag="NewCopy" />
+                        <ComboBoxItem Content="Reemplazar original" Tag="Replace" />
+                    </ComboBox>
+                </Grid>
+            </Border>
+
             <!-- Info tema -->
             <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
