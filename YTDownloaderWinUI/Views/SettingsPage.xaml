@@ -94,6 +94,28 @@
                 </Grid>
             </Border>
 
+            <!-- Portadas en la biblioteca -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="16">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE8B9;" FontSize="18" VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Portadas en la biblioteca" FontWeight="SemiBold" />
+                        <TextBlock Text="Mostrar la portada de cada archivo (activado) o el icono del formato (desactivado)"
+                                   FontSize="12" TextWrapping="Wrap"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="2" VerticalAlignment="Center" MinWidth="0"
+                                  IsOn="{x:Bind core:AppSettings.Current.LibraryShowCovers, Mode=TwoWay}" />
+                </Grid>
+            </Border>
+
             <!-- Mostrar registro -->
             <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"

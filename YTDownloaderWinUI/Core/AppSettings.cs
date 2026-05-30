@@ -34,6 +34,7 @@ public partial class AppSettings : ObservableObject
     [ObservableProperty] private Dictionary<string, bool> _enabledPlatforms = DefaultPlatforms();
     [ObservableProperty] private string _spotifyClientId = string.Empty;
     [ObservableProperty] private string _spotifyClientSecret = string.Empty;
+    [ObservableProperty] private bool _libraryShowCovers = true;
 
     private static Dictionary<string, bool> DefaultPlatforms() => new()
     {

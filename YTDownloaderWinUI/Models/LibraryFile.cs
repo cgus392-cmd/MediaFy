@@ -1,8 +1,10 @@
 using System.IO;
+using CommunityToolkit.Mvvm.ComponentModel;
+using YTDownloader.Core;
 
 namespace YTDownloader.Models;
 
-public class LibraryFile
+public partial class LibraryFile : ObservableObject
 {
     public string FullPath { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
@@ -10,11 +12,26 @@ public class LibraryFile
     public long SizeBytes { get; set; }
     public DateTime Modified { get; set; }
 
+    /// <summary>Ruta de la portada extraída (se rellena de forma asíncrona).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowCover), nameof(ShowIcon))]
+    private string? _coverPath;
+
     public bool IsAudio => Extension is ".mp3" or ".m4a" or ".ogg" or ".opus" or ".wav" or ".flac" or ".aac";
     public bool IsVideo => Extension is ".mp4" or ".webm" or ".mkv" or ".mov" or ".avi";
 
-    /// <summary>Glifo Segoe Fluent por código: MusicNote / Video / Page.</summary>
+    /// <summary>Glifo Segoe Fluent: MusicNote / Video / Page.</summary>
     public string Icon => char.ConvertFromUtf32(IsAudio ? 0xEC4F : IsVideo ? 0xE714 : 0xE7C3);
+
+    public bool ShowCover => AppSettings.Current.LibraryShowCovers && !string.IsNullOrEmpty(CoverPath);
+    public bool ShowIcon  => !ShowCover;
+
+    /// <summary>Re-evalúa la visibilidad cuando cambia el ajuste global de portadas.</summary>
+    public void RefreshCoverVisibility()
+    {
+        OnPropertyChanged(nameof(ShowCover));
+        OnPropertyChanged(nameof(ShowIcon));
+    }
 
     public string TypeLabel => Extension.TrimStart('.').ToUpperInvariant();
 

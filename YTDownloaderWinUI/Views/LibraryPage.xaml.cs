@@ -1,9 +1,11 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Navigation;
 using YTDownloader.Models;
 
 namespace YTDownloader.Views;
@@ -12,11 +14,32 @@ public sealed partial class LibraryPage : Page
 {
     public ObservableCollection<LibraryFile> Files { get; } = new();
 
+    private readonly Core.FfmpegService _ffmpeg = new();
+    private CancellationTokenSource? _coverCts;
+
     public LibraryPage()
     {
         InitializeComponent();
         FilesList.ItemsSource = Files;
         Loaded += (_, _) => LoadFiles();
+        Core.AppSettings.Current.PropertyChanged += OnSettingsChanged;
+    }
+
+    protected override void OnNavigatedFrom(NavigationEventArgs e)
+    {
+        base.OnNavigatedFrom(e);
+        _coverCts?.Cancel();
+        Core.AppSettings.Current.PropertyChanged -= OnSettingsChanged;
+    }
+
+    private void OnSettingsChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(Core.AppSettings.LibraryShowCovers)) return;
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            foreach (var f in Files) f.RefreshCoverVisibility();
+            StartCoverExtraction();
+        });
     }
 
     private void LoadFiles()
@@ -40,6 +63,31 @@ public sealed partial class LibraryPage : Page
         TxtCount.Text = Files.Count.ToString();
         EmptyState.Visibility = Files.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         FilesList.Visibility  = Files.Count > 0  ? Visibility.Visible : Visibility.Collapsed;
+
+        StartCoverExtraction();
+    }
+
+    /// <summary>Extrae portadas en segundo plano (si está activado) y las asigna a cada ítem.</summary>
+    private void StartCoverExtraction()
+    {
+        _coverCts?.Cancel();
+        if (!Core.AppSettings.Current.LibraryShowCovers) return;
+
+        _coverCts = new CancellationTokenSource();
+        var ct = _coverCts.Token;
+        var snapshot = Files.ToList();
+
+        _ = Task.Run(async () =>
+        {
+            foreach (var f in snapshot)
+            {
+                if (ct.IsCancellationRequested) return;
+                if (!string.IsNullOrEmpty(f.CoverPath)) continue;
+                string? cover = await _ffmpeg.ExtractCoverAsync(f.FullPath, ct);
+                if (cover != null && !ct.IsCancellationRequested)
+                    DispatcherQueue.TryEnqueue(() => f.CoverPath = cover);
+            }
+        }, ct);
     }
 
     private void BtnRefresh_Click(object sender, RoutedEventArgs e) => LoadFiles();

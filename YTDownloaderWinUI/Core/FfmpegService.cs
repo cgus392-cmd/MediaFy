@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace YTDownloader.Core;
 
@@ -83,6 +85,56 @@ public class FfmpegService
             File.Move(tempOut, finalOut);
             return finalOut;
         }
+    }
+
+    /// <summary>
+    /// Extrae la portada (audio) o un fotograma (vídeo) a una imagen cacheada.
+    /// Devuelve la ruta de la imagen o null si no hay portada.
+    /// </summary>
+    public async Task<string?> ExtractCoverAsync(string input, CancellationToken ct = default)
+    {
+        try
+        {
+            if (!File.Exists(input)) return null;
+
+            string cacheDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "YTDownloader", "thumbs");
+            Directory.CreateDirectory(cacheDir);
+
+            var fi = new FileInfo(input);
+            string key = $"{input}|{fi.LastWriteTimeUtc.Ticks}|{fi.Length}";
+            string hash = Convert.ToHexString(MD5.HashData(Encoding.UTF8.GetBytes(key)));
+            string outJpg = Path.Combine(cacheDir, hash + ".jpg");
+
+            if (File.Exists(outJpg))
+                return new FileInfo(outJpg).Length > 0 ? outJpg : null;
+
+            string ext = Path.GetExtension(input).ToLowerInvariant();
+            bool isVideo = ext is ".mp4" or ".webm" or ".mkv" or ".mov" or ".avi";
+
+            string args = isVideo
+                ? $"-y -ss 1 -i \"{input}\" -frames:v 1 -vf scale=200:-1 \"{outJpg}\""
+                : $"-y -i \"{input}\" -an -vframes 1 -vf scale=200:-1 \"{outJpg}\"";
+
+            await RunQuietAsync(args, ct);
+            return File.Exists(outJpg) && new FileInfo(outJpg).Length > 0 ? outJpg : null;
+        }
+        catch { return null; }
+    }
+
+    private async Task RunQuietAsync(string args, CancellationToken ct)
+    {
+        using var proc = new Process();
+        proc.StartInfo = new ProcessStartInfo
+        {
+            FileName = _ffmpegPath, Arguments = args,
+            RedirectStandardError = true, RedirectStandardOutput = true,
+            UseShellExecute = false, CreateNoWindow = true
+        };
+        proc.Start();
+        await proc.StandardError.ReadToEndAsync(ct);
+        await proc.WaitForExitAsync(ct);
     }
 
     private async Task RunAsync(string args, CancellationToken ct)

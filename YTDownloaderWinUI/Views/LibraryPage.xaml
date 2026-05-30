@@ -3,8 +3,14 @@
     x:Class="YTDownloader.Views.LibraryPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:YTDownloader"
     xmlns:models="using:YTDownloader.Models"
     Background="Transparent">
+
+    <Page.Resources>
+        <local:BoolToVisibilityConverter x:Key="BoolVis" />
+        <local:StringToBitmapConverter x:Key="StrBmp" />
+    </Page.Resources>
 
     <Grid Margin="28,12,28,0">
         <Grid.RowDefinitions>
@@ -81,8 +87,14 @@
 
                             <Border Width="48" Height="48" CornerRadius="8" VerticalAlignment="Center"
                                     Background="{ThemeResource ControlFillColorSecondaryBrush}">
-                                <FontIcon Glyph="{x:Bind Icon}" FontSize="20"
-                                          Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                                <Grid>
+                                    <FontIcon Glyph="{x:Bind Icon}" FontSize="20"
+                                              Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                              Visibility="{x:Bind ShowIcon, Mode=OneWay, Converter={StaticResource BoolVis}}" />
+                                    <Image Stretch="UniformToFill"
+                                           Source="{x:Bind CoverPath, Mode=OneWay, Converter={StaticResource StrBmp}}"
+                                           Visibility="{x:Bind ShowCover, Mode=OneWay, Converter={StaticResource BoolVis}}" />
+                                </Grid>
                             </Border>
 
                             <StackPanel Grid.Column="1" Margin="14,0,14,0" VerticalAlignment="Center">
