@@ -33,11 +33,6 @@ public sealed partial class DownloadsPage : Page
     }
 
     // ── Vista previa (Fase 3) ──────────────────────────────────
-    private static bool IsYouTubeUrl(string url) =>
-        url.Contains("youtube.com/watch", StringComparison.OrdinalIgnoreCase) ||
-        url.Contains("youtu.be/", StringComparison.OrdinalIgnoreCase) ||
-        url.Contains("youtube.com/shorts", StringComparison.OrdinalIgnoreCase);
-
     private async Task UpdatePreviewAsync()
     {
         string url = TxtUrl.Text.Trim();
@@ -52,9 +47,24 @@ public sealed partial class DownloadsPage : Page
             return;
         }
 
-        if (!IsYouTubeUrl(url))
+        if (!Core.PlatformDetector.LooksLikeUrl(url))
         {
-            ShowPreviewState(error: "No parece un enlace de YouTube válido");
+            ShowPreviewState(error: "Pega un enlace válido (https://...)");
+            return;
+        }
+
+        var platform = Core.PlatformDetector.Detect(url);
+
+        // Spotify: aún no es descarga directa (llega en el siguiente paso)
+        if (platform == Core.Platform.Spotify)
+        {
+            ShowPreviewState(error: "Spotify llega en el próximo paso (descarga por coincidencia con YouTube)");
+            return;
+        }
+
+        if (!Core.AppSettings.Current.IsPlatformEnabled(platform))
+        {
+            ShowPreviewState(error: $"{Core.PlatformDetector.Name(platform)} está desactivada — actívala en Configuración › Plataformas");
             return;
         }
 
@@ -71,7 +81,9 @@ public sealed partial class DownloadsPage : Page
             if (ct.IsCancellationRequested) return;
 
             PreviewTitle.Text = info.Title;
-            PreviewUploader.Text = string.IsNullOrEmpty(info.Uploader) ? "Desconocido" : info.Uploader;
+            PreviewUploader.Text = string.IsNullOrEmpty(info.Uploader)
+                ? Core.PlatformDetector.Name(platform)
+                : $"{info.Uploader}  ·  {Core.PlatformDetector.Name(platform)}";
             PreviewDuration.Text = string.IsNullOrEmpty(info.Duration) ? "—" : info.Duration;
             if (!string.IsNullOrEmpty(info.Thumbnail))
                 PreviewThumb.Source = new BitmapImage(new Uri(info.Thumbnail));
@@ -111,9 +123,21 @@ public sealed partial class DownloadsPage : Page
         string url = TxtUrl.Text.Trim();
         if (string.IsNullOrWhiteSpace(url)) return;
 
-        if (!url.Contains("youtube.com") && !url.Contains("youtu.be"))
+        if (!Core.PlatformDetector.LooksLikeUrl(url))
         {
-            TxtStatus.Text = "Pega un enlace válido de YouTube";
+            TxtStatus.Text = "Pega un enlace válido (https://...)";
+            return;
+        }
+
+        var platform = Core.PlatformDetector.Detect(url);
+        if (platform == Core.Platform.Spotify)
+        {
+            TxtStatus.Text = "Spotify llega en el próximo paso 🎵";
+            return;
+        }
+        if (!Core.AppSettings.Current.IsPlatformEnabled(platform))
+        {
+            TxtStatus.Text = $"{Core.PlatformDetector.Name(platform)} está desactivada (Configuración › Plataformas)";
             return;
         }
 

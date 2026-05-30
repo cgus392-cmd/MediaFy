@@ -31,6 +31,32 @@ public partial class AppSettings : ObservableObject
     [ObservableProperty] private PlayerMode _playerMode = PlayerMode.Ask;
     [ObservableProperty] private CutSaveMode _cutSaveMode = CutSaveMode.Ask;
     [ObservableProperty] private BackdropKind _backdropKind = BackdropKind.Mica;
+    [ObservableProperty] private Dictionary<string, bool> _enabledPlatforms = DefaultPlatforms();
+
+    private static Dictionary<string, bool> DefaultPlatforms() => new()
+    {
+        [nameof(Platform.YouTube)]     = true,
+        [nameof(Platform.SoundCloud)]  = true,
+        [nameof(Platform.TikTok)]      = true,
+        [nameof(Platform.Instagram)]   = true,
+        [nameof(Platform.TwitterX)]    = true,
+        [nameof(Platform.Vimeo)]       = true,
+        [nameof(Platform.Twitch)]      = true,
+        [nameof(Platform.Facebook)]    = true,
+        [nameof(Platform.Dailymotion)] = true,
+        [nameof(Platform.Bandcamp)]    = true,
+        [nameof(Platform.Other)]       = true,
+        [nameof(Platform.Spotify)]     = false, // se habilita al configurarlo (paso 2)
+    };
+
+    public bool IsPlatformEnabled(Platform p) =>
+        EnabledPlatforms.TryGetValue(p.ToString(), out var v) ? v : true;
+
+    public void SetPlatformEnabled(Platform p, bool enabled)
+    {
+        EnabledPlatforms[p.ToString()] = enabled;
+        OnPropertyChanged(nameof(EnabledPlatforms)); // dispara el guardado
+    }
     [ObservableProperty] private string _outputFolder = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", "YTDownloader");
 

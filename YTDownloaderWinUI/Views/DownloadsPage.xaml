@@ -40,7 +40,7 @@
                 <FontIcon Grid.Column="0" Glyph="&#xE71B;" FontSize="16" Margin="10,0,6,0"
                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 <TextBox Grid.Column="1" x:Name="TxtUrl"
-                         PlaceholderText="Pega aquí el enlace de YouTube..."
+                         PlaceholderText="Pega un enlace: YouTube, SoundCloud, TikTok, Instagram, Vimeo..."
                          BorderThickness="0" Background="Transparent"
                          FontSize="14" VerticalAlignment="Center"
                          KeyDown="TxtUrl_KeyDown" />

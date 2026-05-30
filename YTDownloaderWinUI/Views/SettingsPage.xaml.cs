@@ -23,6 +23,8 @@ public sealed partial class SettingsPage : Page
         SelectByTag(CboCut, Core.AppSettings.Current.CutSaveMode.ToString());
         SelectByTag(CboBackdrop, Core.AppSettings.Current.BackdropKind.ToString());
 
+        PlatformsList.ItemsSource = Models.PlatformOption.All();
+
         _ = LoadYtDlpVersionAsync();
     }
 

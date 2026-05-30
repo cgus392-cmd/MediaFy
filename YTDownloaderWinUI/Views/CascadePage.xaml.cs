@@ -30,18 +30,25 @@ public sealed partial class CascadePage : Page
         BtnStart.IsEnabled   = _cascade.CanStart;
     }
 
-    private static bool IsYouTubeUrl(string url) =>
-        url.Contains("youtube.com", StringComparison.OrdinalIgnoreCase) ||
-        url.Contains("youtu.be/", StringComparison.OrdinalIgnoreCase);
-
     private void BtnAdd_Click(object sender, RoutedEventArgs e)
     {
         string url = TxtUrl.Text.Trim();
         if (string.IsNullOrWhiteSpace(url)) return;
 
-        if (!IsYouTubeUrl(url))
+        if (!Core.PlatformDetector.LooksLikeUrl(url))
         {
-            TxtStatus.Text = "No parece un enlace de YouTube válido";
+            TxtStatus.Text = "Pega un enlace válido (https://...)";
+            return;
+        }
+        var platform = Core.PlatformDetector.Detect(url);
+        if (platform == Core.Platform.Spotify)
+        {
+            TxtStatus.Text = "Spotify llega en el próximo paso 🎵";
+            return;
+        }
+        if (!Core.AppSettings.Current.IsPlatformEnabled(platform))
+        {
+            TxtStatus.Text = $"{Core.PlatformDetector.Name(platform)} está desactivada (Configuración › Plataformas)";
             return;
         }
         if (!_cascade.CanAdd)
