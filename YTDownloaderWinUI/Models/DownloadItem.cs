@@ -41,6 +41,9 @@ public partial class DownloadItem : ObservableObject
     [ObservableProperty] private string _outputPath = string.Empty;
     [ObservableProperty] private string _duration = string.Empty;
 
+    /// <summary>Si no es nulo, es una descarga de Spotify (match con YouTube + re-tag).</summary>
+    public SpotifyTrack? Spotify { get; set; }
+
     // ── Progreso rico (Fase 2) ──
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowDetails), nameof(DetailLine))]

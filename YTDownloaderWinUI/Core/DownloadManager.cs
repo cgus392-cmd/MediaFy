@@ -8,6 +8,7 @@ namespace YTDownloader.Core;
 public class DownloadManager
 {
     private readonly YtDlpService _ytDlp = new();
+    private readonly SpotifyService _spotify = new();
     private SemaphoreSlim _semaphore;
     private readonly ConcurrentDictionary<DownloadItem, CancellationTokenSource> _cts = new();
 
@@ -36,6 +37,27 @@ public class DownloadManager
     /// <summary>Obtiene metadatos del enlace para la vista previa (Fase 3).</summary>
     public Task<Models.VideoInfo> GetInfoAsync(string url, CancellationToken ct = default)
         => _ytDlp.GetVideoInfoAsync(url, ct);
+
+    // ── Spotify ────────────────────────────────────────────────
+    public bool SpotifyReady => true; // ya no requiere credenciales
+
+    public Task<List<Models.SpotifyTrack>> ResolveSpotifyAsync(string url, CancellationToken ct = default)
+        => _spotify.ResolveAsync(url, ct);
+
+    public void AddSpotify(Models.SpotifyTrack track)
+    {
+        Directory.CreateDirectory(OutputFolder);
+        var item = new DownloadItem
+        {
+            Url = "spotify", Format = "MP3", Quality = "320kbps",
+            Status = DownloadStatus.Queued, StatusText = "En cola",
+            Title = $"{track.Artists} - {track.Title}",
+            Thumbnail = track.CoverUrl,
+            Spotify = track
+        };
+        Queue.Add(item);
+        _ = ProcessItemAsync(item);
+    }
     public string OutputFolder
     {
         get => AppSettings.Current.OutputFolder;
@@ -85,18 +107,21 @@ public class DownloadManager
         {
             cts.Token.ThrowIfCancellationRequested();
 
-            // 1) Info previa
-            item.Status = DownloadStatus.Fetching;
-            item.StatusText = "Obteniendo info...";
-            try
+            // 1) Info previa (no aplica a Spotify: ya tenemos los metadatos)
+            if (item.Spotify == null)
             {
-                var info = await _ytDlp.GetVideoInfoAsync(item.Url, cts.Token);
-                item.Title = info.Title;
-                item.Thumbnail = info.Thumbnail;
-                item.Duration = info.Duration;
+                item.Status = DownloadStatus.Fetching;
+                item.StatusText = "Obteniendo info...";
+                try
+                {
+                    var info = await _ytDlp.GetVideoInfoAsync(item.Url, cts.Token);
+                    item.Title = info.Title;
+                    item.Thumbnail = info.Thumbnail;
+                    item.Duration = info.Duration;
+                }
+                catch (OperationCanceledException) { throw; }
+                catch { /* si falla el fetch, seguimos con la descarga igual */ }
             }
-            catch (OperationCanceledException) { throw; }
-            catch { /* si falla el fetch, seguimos con la descarga igual */ }
 
             // 2) Descarga
             item.Status = DownloadStatus.Downloading;
@@ -125,7 +150,10 @@ public class DownloadManager
                 }
             });
 
-            await _ytDlp.DownloadAsync(item, OutputFolder, prog, cts.Token);
+            if (item.Spotify != null)
+                await _ytDlp.DownloadFromSpotifyAsync(item, item.Spotify, OutputFolder, prog, cts.Token);
+            else
+                await _ytDlp.DownloadAsync(item, OutputFolder, prog, cts.Token);
 
             item.Progress = 100;
             item.Speed = item.Eta = string.Empty;

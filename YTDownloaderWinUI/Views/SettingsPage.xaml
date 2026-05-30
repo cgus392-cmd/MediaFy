@@ -240,6 +240,21 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+
+            <!-- Info Spotify -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="16">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <FontIcon Glyph="&#xEC4F;" FontSize="18" VerticalAlignment="Top" Margin="0,2,0,0" />
+                    <StackPanel>
+                        <TextBlock Text="Spotify" FontWeight="SemiBold" />
+                        <TextBlock TextWrapping="Wrap" FontSize="12"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   Text="No requiere cuenta, credenciales ni Premium. Activa Spotify arriba, pega un enlace de canción, álbum o playlist en Descargas, y la app obtiene los datos públicos y descarga el audio equivalente desde YouTube etiquetado." />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
         </StackPanel>
         </ScrollViewer>
     </Grid>

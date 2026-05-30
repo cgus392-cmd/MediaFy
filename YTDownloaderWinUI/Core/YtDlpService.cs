@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.Net.Http;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
 using YTDownloader.Models;
@@ -78,6 +79,87 @@ public class YtDlpService
             : $"{formatArg} {common}";
 
         await RunWithProgressAsync(_ytDlpPath, args, progress, ct);
+    }
+
+    private static readonly HttpClient Http = new();
+
+    /// <summary>
+    /// Descarga de Spotify: busca el equivalente en YouTube (ytsearch1), descarga el audio
+    /// como MP3 y lo re-etiqueta con los metadatos y portada reales de Spotify.
+    /// </summary>
+    public async Task DownloadFromSpotifyAsync(DownloadItem item, SpotifyTrack track,
+        string outputFolder, IProgress<DownloadProgress> progress, CancellationToken ct)
+    {
+        string safe = Sanitize($"{track.Artists} - {track.Title}");
+        string outNoExt = Path.Combine(outputFolder, safe);
+        string mp3 = outNoExt + ".mp3";
+
+        string query = $"ytsearch1:{track.Artists} {track.Title} audio";
+        string args = $"-x --audio-format mp3 --audio-quality 0 " +
+                      $"--ffmpeg-location \"{_ffmpegPath}\" --no-playlist --newline " +
+                      $"--progress-template \"{ProgressTemplate}\" " +
+                      $"-o \"{outNoExt}.%(ext)s\" \"{query}\"";
+
+        await RunWithProgressAsync(_ytDlpPath, args, progress, ct);
+
+        progress.Report(new DownloadProgress(-1, "Etiquetando con datos de Spotify..."));
+        await TagSpotifyAsync(mp3, track, ct);
+        item.OutputPath = mp3;
+    }
+
+    private async Task TagSpotifyAsync(string mp3, SpotifyTrack track, CancellationToken ct)
+    {
+        if (!File.Exists(mp3)) return;
+
+        // Descarga la portada de Spotify
+        string? cover = null;
+        try
+        {
+            if (!string.IsNullOrEmpty(track.CoverUrl))
+            {
+                cover = Path.Combine(Path.GetTempPath(), $"cov_{Guid.NewGuid():N}.jpg");
+                var bytes = await Http.GetByteArrayAsync(track.CoverUrl, ct);
+                await File.WriteAllBytesAsync(cover, bytes, ct);
+            }
+        }
+        catch { cover = null; }
+
+        string temp = mp3 + ".tag.mp3";
+        string meta = $"-metadata title=\"{Esc(track.Title)}\" -metadata artist=\"{Esc(track.Artists)}\" " +
+                      $"-metadata album=\"{Esc(track.Album)}\"";
+        string args = cover != null
+            ? $"-y -i \"{mp3}\" -i \"{cover}\" -map 0:a -map 1 -c copy -id3v2_version 3 " +
+              $"-metadata:s:v title=\"Album cover\" -metadata:s:v comment=\"Cover (front)\" {meta} \"{temp}\""
+            : $"-y -i \"{mp3}\" -c copy -id3v2_version 3 {meta} \"{temp}\"";
+
+        try
+        {
+            await RunFfmpegAsync(args, ct);
+            if (File.Exists(temp)) { File.Delete(mp3); File.Move(temp, mp3); }
+        }
+        catch { if (File.Exists(temp)) try { File.Delete(temp); } catch { } }
+        finally { if (cover != null) try { File.Delete(cover); } catch { } }
+    }
+
+    private async Task RunFfmpegAsync(string args, CancellationToken ct)
+    {
+        using var proc = new Process();
+        proc.StartInfo = new ProcessStartInfo
+        {
+            FileName = _ffmpegPath, Arguments = args,
+            RedirectStandardError = true, RedirectStandardOutput = true,
+            UseShellExecute = false, CreateNoWindow = true
+        };
+        proc.Start();
+        await proc.StandardError.ReadToEndAsync(ct);
+        await proc.WaitForExitAsync(ct);
+    }
+
+    private static string Esc(string s) => s.Replace("\"", "'");
+    private static string Sanitize(string s)
+    {
+        foreach (char c in Path.GetInvalidFileNameChars()) s = s.Replace(c, '_');
+        return s.Length > 120 ? s[..120] : s;
     }
 
     private static string BuildFormatArg(string format, string quality)

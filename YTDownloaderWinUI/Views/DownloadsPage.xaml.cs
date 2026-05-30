@@ -55,10 +55,15 @@ public sealed partial class DownloadsPage : Page
 
         var platform = Core.PlatformDetector.Detect(url);
 
-        // Spotify: aún no es descarga directa (llega en el siguiente paso)
+        // Spotify: descarga por coincidencia con YouTube (no análisis directo)
         if (platform == Core.Platform.Spotify)
         {
-            ShowPreviewState(error: "Spotify llega en el próximo paso (descarga por coincidencia con YouTube)");
+            if (!Core.AppSettings.Current.IsPlatformEnabled(Core.Platform.Spotify))
+                ShowPreviewState(error: "Spotify está desactivado — actívalo en Configuración › Plataformas");
+            else if (!_manager.SpotifyReady)
+                ShowPreviewState(error: "Spotify: configura tu Client ID y Secret en Configuración");
+            else
+                ShowPreviewState(error: "Spotify detectado ✓ — pulsa Descargar para añadir las canciones");
             return;
         }
 
@@ -118,7 +123,7 @@ public sealed partial class DownloadsPage : Page
         DownloadsList.Visibility = count >  0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    private void BtnDownload_Click(object sender, RoutedEventArgs e)
+    private async void BtnDownload_Click(object sender, RoutedEventArgs e)
     {
         string url = TxtUrl.Text.Trim();
         if (string.IsNullOrWhiteSpace(url)) return;
@@ -130,11 +135,27 @@ public sealed partial class DownloadsPage : Page
         }
 
         var platform = Core.PlatformDetector.Detect(url);
+
         if (platform == Core.Platform.Spotify)
         {
-            TxtStatus.Text = "Spotify llega en el próximo paso 🎵";
+            if (!Core.AppSettings.Current.IsPlatformEnabled(Core.Platform.Spotify))
+            { TxtStatus.Text = "Spotify está desactivado (Configuración › Plataformas)"; return; }
+            if (!_manager.SpotifyReady)
+            { TxtStatus.Text = "Configura tus credenciales de Spotify en Configuración"; return; }
+
+            TxtUrl.Text = string.Empty;
+            PreviewCard.Visibility = Visibility.Collapsed;
+            TxtStatus.Text = "Resolviendo Spotify...";
+            try
+            {
+                var tracks = await _manager.ResolveSpotifyAsync(url);
+                foreach (var t in tracks) _manager.AddSpotify(t);
+                TxtStatus.Text = $"Spotify: {tracks.Count} canción(es) añadidas a la cola";
+            }
+            catch (Exception ex) { TxtStatus.Text = $"Spotify: {ex.Message}"; }
             return;
         }
+
         if (!Core.AppSettings.Current.IsPlatformEnabled(platform))
         {
             TxtStatus.Text = $"{Core.PlatformDetector.Name(platform)} está desactivada (Configuración › Plataformas)";

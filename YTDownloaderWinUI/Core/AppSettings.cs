@@ -32,6 +32,8 @@ public partial class AppSettings : ObservableObject
     [ObservableProperty] private CutSaveMode _cutSaveMode = CutSaveMode.Ask;
     [ObservableProperty] private BackdropKind _backdropKind = BackdropKind.Mica;
     [ObservableProperty] private Dictionary<string, bool> _enabledPlatforms = DefaultPlatforms();
+    [ObservableProperty] private string _spotifyClientId = string.Empty;
+    [ObservableProperty] private string _spotifyClientSecret = string.Empty;
 
     private static Dictionary<string, bool> DefaultPlatforms() => new()
     {
