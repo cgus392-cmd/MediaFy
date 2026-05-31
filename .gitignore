@@ -5,3 +5,5 @@ obj/
 *.suo
 .DS_Store
 startup_error.log
+
+installer/dist/
