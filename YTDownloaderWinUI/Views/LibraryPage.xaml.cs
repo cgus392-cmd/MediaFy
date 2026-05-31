@@ -113,7 +113,11 @@ public sealed partial class LibraryPage : Page
         }
 
         if (mode == Core.PlayerMode.Integrated)
-            await App.Playback.PlayAsync(path, Path.GetFileNameWithoutExtension(path));
+        {
+            // Pasa portada del archivo (si ya estaba cacheada) para SMTC
+            var lf = Files.FirstOrDefault(f => f.FullPath == path);
+            await App.Playback.PlayAsync(path, Path.GetFileNameWithoutExtension(path), null, lf?.CoverPath);
+        }
         else
             OpenWithWindows(path);
     }

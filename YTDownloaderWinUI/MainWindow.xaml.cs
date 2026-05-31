@@ -1,6 +1,11 @@
+using System.Runtime.InteropServices;
+using CommunityToolkit.Mvvm.Input;
+using H.NotifyIcon;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using Windows.Foundation;
 using Windows.Graphics;
@@ -15,9 +20,11 @@ public sealed partial class MainWindow : Window
     private bool _onLibrary;
     private bool _volSync;
     private BackdropManager? _backdrop;
+    private TaskbarIcon? _tray;
+    private bool _reallyExit;
 
-    // Suavizado del VU (sobre niveles REALES del servicio)
-    private readonly DispatcherTimer _vuTimer = new() { Interval = TimeSpan.FromMilliseconds(50) };
+    // VU del MediaPlayer (ligero, no toca samples → cero microcortes)
+    private readonly DispatcherTimer _vuTimer = new() { Interval = TimeSpan.FromMilliseconds(70) };
     private double _vuL, _vuR;
 
     public MainWindow()
@@ -32,6 +39,12 @@ public sealed partial class MainWindow : Window
 
         _backdrop = new BackdropManager(this);
         _backdrop.Apply(AppSettings.Current.BackdropKind);
+
+        SetupTray();
+        AppWindow.Closing += OnClosing;
+
+        // Si se inició como autoarranque con Windows, la ventana no aparece (solo la bandeja)
+        if (App.StartedInTray) AppWindow.Hide();
 
         ContentFrame.Navigated += (_, e) =>
         {
@@ -62,9 +75,84 @@ public sealed partial class MainWindow : Window
                 case "cascade":   ContentFrame.Navigate(typeof(CascadePage));   break;
                 case "library":   ContentFrame.Navigate(typeof(LibraryPage));   break;
                 case "editor":    ContentFrame.Navigate(typeof(EditorPage));    break;
+                case "resources": ContentFrame.Navigate(typeof(ResourcePage));  break;
                 case "about":     ContentFrame.Navigate(typeof(AboutPage));     break;
             }
         }
+    }
+
+    // ── Bandeja del sistema / segundo plano ────────────────────
+    private void SetupTray()
+    {
+        try
+        {
+            var menu = new MenuFlyout();
+            var open = new MenuFlyoutItem { Text = "Abrir MediaFy" };
+            open.Click += (_, _) => ShowFromTray();
+            var exit = new MenuFlyoutItem { Text = "Salir" };
+            exit.Click += (_, _) => ExitApp();
+            menu.Items.Add(open);
+            menu.Items.Add(new MenuFlyoutSeparator());
+            menu.Items.Add(exit);
+
+            _tray = new TaskbarIcon
+            {
+                ToolTipText = "MediaFy by CG",
+                IconSource = new BitmapImage(new Uri("ms-appx:///Assets/logo.ico")),
+                ContextFlyout = menu,
+                LeftClickCommand = new RelayCommand(ShowFromTray)
+            };
+            _tray.ForceCreate();
+        }
+        catch { /* sin bandeja, la app sigue funcionando */ }
+    }
+
+    private void OnClosing(AppWindow sender, AppWindowClosingEventArgs args)
+    {
+        if (_reallyExit) return;
+        args.Cancel = true;           // no cerrar: ir a segundo plano
+        AppWindow.Hide();
+    }
+
+    private void ShowFromTray()
+    {
+        AppWindow.Show();
+        try
+        {
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            SetForegroundWindow(hwnd);
+        }
+        catch { }
+    }
+
+    private void ExitApp()
+    {
+        _reallyExit = true;
+        try { _tray?.Dispose(); } catch { }
+        Close();
+    }
+
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    /// <summary>Trae la ventana al frente (la usa la activación entrante).</summary>
+    public void BringToFront()
+    {
+        try
+        {
+            AppWindow.Show();
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            SetForegroundWindow(hwnd);
+        }
+        catch { }
+    }
+
+    /// <summary>Recibe una URL desde la línea de comandos o el protocolo mediafy://.</summary>
+    public void HandleIncomingUrl(string url)
+    {
+        NavigateTo("downloads");
+        if (ContentFrame.Content is DownloadsPage dp)
+            dp.PrefillUrl(url);
     }
 
     /// <summary>Selecciona una sección por su tag (lo usan los accesos rápidos de Inicio).</summary>
@@ -118,16 +206,12 @@ public sealed partial class MainWindow : Window
 
     private void Gp_Close_Click(object sender, RoutedEventArgs e) => App.Playback.Close();
 
-    // ── VU meter REAL (niveles L/R desde AudioGraph) ──────────
+    // ── VU meter (MediaPlayer + AudioStateMonitor, ligero, sin glitches) ──
     private void VuTimer_Tick(object? sender, object e)
     {
-        double tL = App.Playback.HasMedia ? App.Playback.LevelLeft : 0;
-        double tR = App.Playback.HasMedia ? App.Playback.LevelRight : 0;
-
-        // Ataque rápido, caída suave (comportamiento típico de un VU)
-        _vuL = tL > _vuL ? tL : _vuL + (tL - _vuL) * 0.25;
-        _vuR = tR > _vuR ? tR : _vuR + (tR - _vuR) * 0.25;
-
+        App.Playback.TickLevels();
+        _vuL = App.Playback.LevelLeft;
+        _vuR = App.Playback.LevelRight;
         SetBar(GpVuLeft, _vuL);
         SetBar(GpVuRight, _vuR);
         SetBar(GpVuLeftBig, _vuL);

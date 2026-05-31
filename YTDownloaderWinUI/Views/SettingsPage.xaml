@@ -228,6 +228,108 @@
                 </StackPanel>
             </Border>
 
+            <!-- ══ Integración con Windows ══ -->
+            <TextBlock Text="Integración con Windows" FontSize="18" FontWeight="SemiBold" Margin="2,10,0,0" />
+            <TextBlock Text="Cómo MediaFy se comporta como una app del sistema."
+                       FontSize="13" TextWrapping="Wrap"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="2,-6,0,2" />
+
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="16">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xEA8F;" FontSize="18" VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Notificar al terminar descargas" FontWeight="SemiBold" />
+                        <TextBlock Text="Recibe una notificación nativa de Windows con botones para abrir el archivo o mostrarlo en la carpeta."
+                                   FontSize="12" TextWrapping="Wrap"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="2" VerticalAlignment="Center" MinWidth="0"
+                                  IsOn="{x:Bind core:AppSettings.Current.NotifyOnComplete, Mode=TwoWay}" />
+                </Grid>
+            </Border>
+
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="16">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE7E8;" FontSize="18" VerticalAlignment="Top" Margin="0,2,12,0" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Iniciar con Windows" FontWeight="SemiBold" />
+                        <TextBlock Text="MediaFy arranca al encender el equipo y queda esperando en la bandeja del sistema, sin abrir ventana."
+                                   FontSize="12" TextWrapping="Wrap"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="2" x:Name="TogStartup" VerticalAlignment="Center" MinWidth="0"
+                                  Toggled="OnStartupToggled" />
+                </Grid>
+            </Border>
+
+            <!-- ══ Conexión externa ══ -->
+            <TextBlock Text="Conexión externa" FontSize="18" FontWeight="SemiBold" Margin="2,10,0,0" />
+            <TextBlock Text="Cómo se comunica MediaFy con el resto del sistema y de la web."
+                       FontSize="13" TextWrapping="Wrap"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="2,-6,0,2" />
+
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="16">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE72C;" FontSize="18" VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Actualizar yt-dlp automáticamente" FontWeight="SemiBold" />
+                        <TextBlock Text="Al iniciar MediaFy, busca y aplica actualizaciones del motor de descarga (recomendado: YouTube cambia seguido)."
+                                   FontSize="12" TextWrapping="Wrap"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="2" VerticalAlignment="Center" MinWidth="0"
+                                  IsOn="{x:Bind core:AppSettings.Current.AutoUpdateYtDlp, Mode=TwoWay}" />
+                </Grid>
+            </Border>
+
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="16">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE71B;" FontSize="18" VerticalAlignment="Top" Margin="0,2,12,0" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Protocolo mediafy://" FontWeight="SemiBold" />
+                        <TextBlock TextWrapping="Wrap" FontSize="12"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   Text="Permite que enlaces del tipo mediafy://download?url=... (desde la extensión de navegador o cualquier app) abran MediaFy y carguen el enlace listo para descargar." />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="2" x:Name="TogProtocol" VerticalAlignment="Center" MinWidth="0"
+                                  Toggled="OnProtocolToggled" />
+                </Grid>
+            </Border>
+
+            <!-- Extensión de navegador -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="16">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE774;" FontSize="18" VerticalAlignment="Top" Margin="0,2,12,0" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Extensión de navegador" FontWeight="SemiBold" />
+                        <TextBlock TextWrapping="Wrap" FontSize="12"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   Text="Añade un botón 'Descargar con MediaFy' a YouTube, Spotify, TikTok y muchos más. Pulsa Instalar para abrir un asistente guiado paso a paso." />
+                    </StackPanel>
+                    <Button Grid.Column="2" Click="OnInstallExtension" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE896;" FontSize="13" />
+                            <TextBlock Text="Instalar" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Border>
+
             <!-- ══ Plataformas ══ -->
             <TextBlock Text="Plataformas" FontSize="18" FontWeight="SemiBold" Margin="2,10,0,0" />
             <TextBlock Text="Activa las fuentes desde las que quieres descargar. Cada una se habilita con su interruptor."

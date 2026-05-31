@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using YTDownloader.Models;
 
 namespace YTDownloader.Core;
@@ -37,6 +38,9 @@ public class DownloadManager
     /// <summary>Obtiene metadatos del enlace para la vista previa (Fase 3).</summary>
     public Task<Models.VideoInfo> GetInfoAsync(string url, CancellationToken ct = default)
         => _ytDlp.GetVideoInfoAsync(url, ct);
+
+    /// <summary>Ejecuta yt-dlp -U en background (auto-actualización).</summary>
+    public Task UpdateYtDlpAsync() => _ytDlp.SelfUpdateAsync();
 
     // ── Spotify ────────────────────────────────────────────────
     public bool SpotifyReady => true; // ya no requiere credenciales
@@ -95,6 +99,21 @@ public class DownloadManager
         item.Status = DownloadStatus.Queued;
         item.StatusText = "En cola";
         _ = ProcessItemAsync(item);
+    }
+
+    /// <summary>Busca el archivo más reciente en la carpeta de salida (heurística para notificación).</summary>
+    private string FindResultPath(DownloadItem item)
+    {
+        try
+        {
+            var dir = new DirectoryInfo(OutputFolder);
+            if (!dir.Exists) return string.Empty;
+            var newest = dir.EnumerateFiles()
+                .OrderByDescending(f => f.LastWriteTimeUtc)
+                .FirstOrDefault();
+            return newest?.FullName ?? string.Empty;
+        }
+        catch { return string.Empty; }
     }
 
     private async Task ProcessItemAsync(DownloadItem item)
@@ -159,6 +178,14 @@ public class DownloadManager
             item.Speed = item.Eta = string.Empty;
             item.Status = DownloadStatus.Done;
             item.StatusText = "Completado";
+
+            if (AppSettings.Current.NotifyOnComplete)
+            {
+                string fp = item.OutputPath;
+                if (string.IsNullOrEmpty(fp) || !File.Exists(fp))
+                    fp = FindResultPath(item);
+                NotificationService.DownloadCompleted(item.Title, fp);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -171,6 +198,8 @@ public class DownloadManager
             item.Status = DownloadStatus.Error;
             item.StatusText = $"Error: {ex.Message[..Math.Min(80, ex.Message.Length)]}";
             item.AddLog($"ERROR: {ex.Message}");
+            if (AppSettings.Current.NotifyOnComplete)
+                NotificationService.DownloadFailed(item.Title, ex.Message);
         }
         finally
         {

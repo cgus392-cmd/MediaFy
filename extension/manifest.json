@@ -1,0 +1,54 @@
+{
+  "manifest_version": 3,
+  "name": "MediaFy Connector",
+  "short_name": "MediaFy",
+  "version": "1.0.0",
+  "description": "Descarga el contenido de la pestaña actual con MediaFy (YouTube, SoundCloud, TikTok, Spotify, Vimeo y muchos más).",
+  "author": "CG LABS",
+
+  "icons": {
+    "16":  "icon-16.png",
+    "48":  "icon-48.png",
+    "128": "icon-128.png"
+  },
+
+  "action": {
+    "default_title": "Descargar con MediaFy",
+    "default_icon": {
+      "16":  "icon-16.png",
+      "48":  "icon-48.png",
+      "128": "icon-128.png"
+    },
+    "default_popup": "popup.html"
+  },
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "permissions": ["activeTab", "contextMenus", "notifications", "scripting"],
+  "host_permissions": ["<all_urls>"],
+
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.youtube.com/*",
+        "*://youtu.be/*",
+        "*://*.soundcloud.com/*",
+        "*://*.tiktok.com/*",
+        "*://*.spotify.com/*",
+        "*://*.vimeo.com/*",
+        "*://*.twitch.tv/*",
+        "*://*.dailymotion.com/*",
+        "*://*.bandcamp.com/*",
+        "*://*.instagram.com/*",
+        "*://twitter.com/*",
+        "*://x.com/*",
+        "*://*.facebook.com/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

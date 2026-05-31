@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<style>
+  body { width: 260px; margin: 0; padding: 16px; background: #1a1a1a; color: #eee;
+         font-family: "Segoe UI", system-ui, sans-serif; }
+  h1 { font-size: 14px; margin: 0 0 6px; }
+  p  { font-size: 12px; opacity: .75; margin: 0 0 14px; line-height: 1.4; }
+  button { width: 100%; padding: 10px 12px; border: 0; border-radius: 8px;
+           background: linear-gradient(135deg, #4C8BF5, #2563EB); color: #fff;
+           font-weight: 600; font-size: 13px; cursor: pointer; }
+  button:hover { filter: brightness(1.1); }
+  .hint { font-size: 11px; opacity: .55; margin-top: 12px; }
+</style></head>
+<body>
+  <h1>MediaFy Connector</h1>
+  <p>Envía la pestaña actual a MediaFy para descargarla.</p>
+  <button id="go">⬇  Descargar esta página</button>
+  <div class="hint">También puedes hacer clic derecho en cualquier enlace → "Descargar este enlace con MediaFy".</div>
+  <script>
+    document.getElementById("go").addEventListener("click", async () => {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab || !tab.url || !tab.id) return;
+      // Inyecta el anchor en la pestaña activa para disparar el protocolo desde la propia página
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: (u) => {
+          const proto = "mediafy://download?url=" + encodeURIComponent(u);
+          const a = document.createElement("a");
+          a.href = proto; a.style.display = "none";
+          document.body.appendChild(a); a.click();
+          setTimeout(() => a.remove(), 100);
+        },
+        args: [tab.url]
+      });
+      window.close();
+    });
+  </script>
+</body></html>

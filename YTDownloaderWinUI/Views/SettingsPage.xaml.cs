@@ -11,21 +11,28 @@ public sealed partial class SettingsPage : Page
     public SettingsPage()
     {
         InitializeComponent();
+        // Cachea la página: al volver conserva el estado en memoria
+        NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Required;
+
         TxtFolder.Text = App.DownloadManager.OutputFolder;
-
-        // Restaura el umbral de cascada guardado
-        int threshold = Core.AppSettings.Current.CascadeThreshold;
-        foreach (ComboBoxItem ci in CboThreshold.Items)
-            if ((string?)ci.Tag == threshold.ToString()) { ci.IsSelected = true; break; }
-
-        // Restaura modo de reproductor y de corte
-        SelectByTag(CboPlayer, Core.AppSettings.Current.PlayerMode.ToString());
-        SelectByTag(CboCut, Core.AppSettings.Current.CutSaveMode.ToString());
-        SelectByTag(CboBackdrop, Core.AppSettings.Current.BackdropKind.ToString());
-
         PlatformsList.ItemsSource = Models.PlatformOption.All();
 
+        // La restauración se hace en Loaded: los ComboBox aún no están "listos"
+        // en el constructor — si se intenta antes, al volver se ven vacíos.
+        Loaded += OnLoaded;
+
         _ = LoadYtDlpVersionAsync();
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        SelectByTag(CboThreshold, Core.AppSettings.Current.CascadeThreshold.ToString());
+        SelectByTag(CboPlayer,    Core.AppSettings.Current.PlayerMode.ToString());
+        SelectByTag(CboCut,       Core.AppSettings.Current.CutSaveMode.ToString());
+        SelectByTag(CboBackdrop,  Core.AppSettings.Current.BackdropKind.ToString());
+
+        TogProtocol.IsOn = Core.UrlProtocol.IsRegistered();
+        TogStartup.IsOn  = Core.StartupManager.IsEnabled();
     }
 
     private void OnBackdropChanged(object sender, SelectionChangedEventArgs e)
@@ -40,8 +47,14 @@ public sealed partial class SettingsPage : Page
 
     private static void SelectByTag(ComboBox combo, string tag)
     {
-        foreach (ComboBoxItem ci in combo.Items)
-            if ((string?)ci.Tag == tag) { ci.IsSelected = true; break; }
+        for (int i = 0; i < combo.Items.Count; i++)
+        {
+            if (combo.Items[i] is ComboBoxItem ci && (string?)ci.Tag == tag)
+            {
+                combo.SelectedIndex = i;
+                return;
+            }
+        }
     }
 
     private void OnThresholdChanged(object sender, SelectionChangedEventArgs e)
@@ -56,6 +69,112 @@ public sealed partial class SettingsPage : Page
         if (CboPlayer.SelectedItem is ComboBoxItem item &&
             Enum.TryParse<Core.PlayerMode>((string?)item.Tag, out var m))
             Core.AppSettings.Current.PlayerMode = m;
+    }
+
+    private async void OnInstallExtension(object sender, RoutedEventArgs e)
+    {
+        if (!Core.BrowserDetector.ExtensionAvailable())
+        {
+            var err = new ContentDialog
+            {
+                Title = "Extensión no encontrada",
+                Content = "La carpeta de la extensión no se encontró junto a MediaFy. Reinstala la app o contacta con el desarrollador.",
+                CloseButtonText = "Cerrar",
+                XamlRoot = XamlRoot
+            };
+            await err.ShowAsync();
+            return;
+        }
+
+        var browser = Core.BrowserDetector.Detect();
+        string browserName = browser switch
+        {
+            Core.Browser.Edge => "Microsoft Edge",
+            Core.Browser.Chrome => "Google Chrome",
+            Core.Browser.Brave => "Brave",
+            Core.Browser.Opera => "Opera",
+            _ => "tu navegador"
+        };
+        string extensionsLabel = Core.BrowserDetector.ExtensionsUrl(browser);
+
+        var panel = new StackPanel { Spacing = 14 };
+        panel.Children.Add(Step(1, $"Voy a abrir {browserName} en la página de extensiones ({extensionsLabel})."));
+        panel.Children.Add(Step(2, "Activa el interruptor \"Modo de desarrollador\" (esquina superior derecha)."));
+        panel.Children.Add(Step(3, "Pulsa \"Cargar descomprimida\" y selecciona la carpeta que MediaFy te abrirá automáticamente."));
+        panel.Children.Add(new TextBlock
+        {
+            FontSize = 12,
+            Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorTertiaryBrush"],
+            TextWrapping = TextWrapping.Wrap,
+            Text = "MediaFy abrirá las dos ventanas (extensiones y la carpeta) para que solo tengas que arrastrar/seleccionar."
+        });
+
+        var dlg = new ContentDialog
+        {
+            Title = "Instalar extensión de MediaFy",
+            Content = panel,
+            PrimaryButtonText = "Continuar",
+            CloseButtonText = "Cancelar",
+            DefaultButton = ContentDialogButton.Primary,
+            XamlRoot = XamlRoot
+        };
+
+        if (await dlg.ShowAsync() == ContentDialogResult.Primary)
+        {
+            Core.BrowserDetector.OpenExtensionsPage();
+            await Task.Delay(700); // pequeño respiro para que el navegador abra
+            Core.BrowserDetector.OpenExtensionFolder();
+        }
+    }
+
+    private static UIElement Step(int n, string text)
+    {
+        var g = new Grid();
+        g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        var num = new Border
+        {
+            Width = 28, Height = 28, CornerRadius = new CornerRadius(14),
+            Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["AccentFillColorDefaultBrush"],
+            Margin = new Thickness(0, 0, 12, 0),
+            VerticalAlignment = VerticalAlignment.Top,
+            Child = new TextBlock
+            {
+                Text = n.ToString(),
+                Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.White),
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            }
+        };
+        Grid.SetColumn(num, 0);
+        g.Children.Add(num);
+
+        var tb = new TextBlock
+        {
+            Text = text, FontSize = 13, TextWrapping = TextWrapping.Wrap,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        Grid.SetColumn(tb, 1);
+        g.Children.Add(tb);
+        return g;
+    }
+
+    private void OnProtocolToggled(object sender, RoutedEventArgs e)
+    {
+        var sw = (ToggleSwitch)sender;
+        bool ok = sw.IsOn ? Core.UrlProtocol.Register() : Core.UrlProtocol.Unregister();
+        if (!ok) sw.IsOn = Core.UrlProtocol.IsRegistered();
+        Core.AppSettings.Current.UrlProtocolRegistered = Core.UrlProtocol.IsRegistered();
+    }
+
+    private void OnStartupToggled(object sender, RoutedEventArgs e)
+    {
+        var sw = (ToggleSwitch)sender;
+        bool ok = sw.IsOn ? Core.StartupManager.Enable() : Core.StartupManager.Disable();
+        if (!ok) sw.IsOn = Core.StartupManager.IsEnabled();
+        Core.AppSettings.Current.StartWithWindows = Core.StartupManager.IsEnabled();
     }
 
     private void OnCutChanged(object sender, SelectionChangedEventArgs e)

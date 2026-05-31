@@ -18,7 +18,8 @@
     <AssemblyName>MediaFy</AssemblyName>
     <ApplicationIcon>Assets\logo.ico</ApplicationIcon>
     <EnableMsixTooling>true</EnableMsixTooling>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <StartupObject>YTDownloader.Program</StartupObject>
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,6 +27,7 @@
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
+    <PackageReference Include="H.NotifyIcon.WinUI" Version="2.1.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -39,6 +41,11 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Content Include="Assets\logo.png" />
+    <!-- La carpeta de la extensión de navegador viaja con la app -->
+    <None Include="..\extension\**\*">
+      <Link>extension\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

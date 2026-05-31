@@ -1,158 +1,174 @@
-using System.Runtime.InteropServices;
-using Windows.Foundation;
+using System.IO;
 using Windows.Media;
-using Windows.Media.Audio;
 using Windows.Media.Core;
-using Windows.Media.MediaProperties;
-using Windows.Media.Render;
+using Windows.Media.Playback;
 using Windows.Storage;
-using WinRT;
+using Windows.Storage.Streams;
 
 namespace YTDownloader.Core;
 
-[ComImport]
-[Guid("5B0D3235-4DBA-4D44-865E-8F1D0E4FD04D")]
-[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-unsafe interface IMemoryBufferByteAccess
-{
-    void GetBuffer(out byte* buffer, out uint capacity);
-}
-
 /// <summary>
-/// Reproductor global con AudioGraph: reproduce el archivo y, en paralelo, lee las
-/// muestras PCM reales para calcular el nivel (pico) de cada canal L/R. VU-meter real.
+/// Reproductor global persistente basado en MediaPlayer:
+/// - Sin microcortes (el motor de Windows trabaja a bajo nivel, no carga la UI)
+/// - Integra automáticamente con SMTC (System Media Transport Controls): Windows
+///   ve el audio, muestra la tarjeta en el panel de volumen, hardware keys, etc.
+/// - Niveles de VU vía AudioStateMonitor (ligero, sin tocar muestras PCM).
 /// </summary>
 public class PlaybackService
 {
-    private AudioGraph? _graph;
-    private MediaSourceAudioInputNode? _input;
-    private AudioDeviceOutputNode? _output;
-    private AudioFrameOutputNode? _frameOutput;
-    private int _channels = 2;
+    private readonly MediaPlayer _player = new();
+    private SystemMediaTransportControls? _smtc;
+    private string? _currentPath;
+    private string? _currentCover;
 
+    public MediaPlayer Player => _player;
     public string CurrentTitle { get; private set; } = string.Empty;
+    public string CurrentArtist { get; private set; } = string.Empty;
     public bool HasMedia { get; private set; }
-    public bool IsPlaying { get; private set; }
-    public double Volume { get; private set; } = 1.0;
 
-    // Niveles reales por canal (0..1), actualizados cada quantum de audio.
-    public double LevelLeft { get; private set; }
+    public bool IsPlaying => _player.PlaybackSession?.PlaybackState == MediaPlaybackState.Playing;
+    public double Volume
+    {
+        get => _player.Volume;
+        private set => _player.Volume = Math.Clamp(value, 0, 1);
+    }
+
+    /// <summary>Niveles aproximados por canal (0..1). Derivados del estado de audio del MediaPlayer.</summary>
+    public double LevelLeft  { get; private set; }
     public double LevelRight { get; private set; }
 
     public event Action? Changed;
 
-    public async Task PlayAsync(string path, string title)
+    public PlaybackService()
     {
-        if (!await EnsureGraphAsync()) return;
+        _player.AutoPlay = false;
+        _player.Volume = 1.0;
+        _player.CommandManager.IsEnabled = false; // gestionamos SMTC manualmente
+        _player.MediaEnded += (_, _) => { Changed?.Invoke(); };
+        _player.PlaybackSession.PlaybackStateChanged += (_, _) => { UpdateSmtcState(); Changed?.Invoke(); };
+    }
 
-        // Quita la fuente anterior
-        if (_input != null) { try { _input.Dispose(); } catch { } _input = null; }
-
+    public async Task PlayAsync(string path, string title, string? artist = null, string? coverPath = null)
+    {
         var file = await StorageFile.GetFileFromPathAsync(path);
-        var src = MediaSource.CreateFromStorageFile(file);
-        var res = await _graph!.CreateMediaSourceAudioInputNodeAsync(src);
-        if (res.Status != MediaSourceAudioInputNodeCreationStatus.Success) return;
+        _player.Source = MediaSource.CreateFromStorageFile(file);
+        _player.Play();
 
-        _input = res.Node;
-        _input.OutgoingGain = Volume;
-        _input.AddOutgoingConnection(_output);
-        _input.AddOutgoingConnection(_frameOutput);
-        _input.MediaSourceCompleted += (_, _) =>
-        {
-            IsPlaying = false;
-            LevelLeft = LevelRight = 0;
-            Changed?.Invoke();
-        };
-
+        _currentPath = path;
+        _currentCover = coverPath;
         CurrentTitle = title;
+        CurrentArtist = artist ?? string.Empty;
         HasMedia = true;
-        _graph.Start();
-        IsPlaying = true;
+
+        EnsureSmtc();
+        await UpdateSmtcMetadataAsync();
         Changed?.Invoke();
-    }
-
-    private async Task<bool> EnsureGraphAsync()
-    {
-        if (_graph != null) return true;
-
-        var settings = new AudioGraphSettings(AudioRenderCategory.Media);
-        var gr = await AudioGraph.CreateAsync(settings);
-        if (gr.Status != AudioGraphCreationStatus.Success) return false;
-        _graph = gr.Graph;
-
-        var outRes = await _graph.CreateDeviceOutputNodeAsync();
-        if (outRes.Status != AudioDeviceNodeCreationStatus.Success) return false;
-        _output = outRes.DeviceOutputNode;
-
-        // Fuerza el nodo de medición a ESTÉREO float, sin importar si la salida es 7.1
-        var meterProps = AudioEncodingProperties.CreatePcm(_graph.EncodingProperties.SampleRate, 2, 32);
-        meterProps.Subtype = MediaEncodingSubtypes.Float;
-        _frameOutput = _graph.CreateFrameOutputNode(meterProps);
-        _channels = 2;
-
-        _graph.QuantumStarted += OnQuantum;
-        return true;
-    }
-
-    private void OnQuantum(AudioGraph sender, object args)
-    {
-        if (_frameOutput is null) return;
-        try
-        {
-            using AudioFrame frame = _frameOutput.GetFrame();
-            ProcessFrame(frame);
-        }
-        catch { }
-    }
-
-    private unsafe void ProcessFrame(AudioFrame frame)
-    {
-        using AudioBuffer buffer = frame.LockBuffer(AudioBufferAccessMode.Read);
-        using IMemoryBufferReference reference = buffer.CreateReference();
-
-        // CsWinRT: obtener el acceso a bytes vía proyección WinRT (no cast directo)
-        var byteAccess = reference.As<IMemoryBufferByteAccess>();
-        byteAccess.GetBuffer(out byte* bytes, out uint capacity);
-
-        float* data = (float*)bytes;
-        int count = (int)(capacity / sizeof(float));
-        int ch = _channels <= 0 ? 2 : _channels;
-
-        double peakL = 0, peakR = 0;
-        for (int i = 0; i + ch - 1 < count; i += ch)
-        {
-            double l = Math.Abs(data[i]);
-            double r = ch > 1 ? Math.Abs(data[i + 1]) : l;
-            if (l > peakL) peakL = l;
-            if (r > peakR) peakR = r;
-        }
-
-        LevelLeft = Math.Min(1.0, peakL);
-        LevelRight = Math.Min(1.0, peakR);
     }
 
     public void Toggle()
     {
-        if (_graph is null) return;
-        if (IsPlaying) { _graph.Stop(); IsPlaying = false; LevelLeft = LevelRight = 0; }
-        else { _graph.Start(); IsPlaying = true; }
-        Changed?.Invoke();
+        if (!HasMedia) return;
+        if (IsPlaying) _player.Pause(); else _player.Play();
     }
 
-    public void SetVolume(double v)
+    public void SetVolume(double v) => Volume = v;
+
+    public void Seek(TimeSpan pos)
     {
-        Volume = Math.Clamp(v, 0, 1);
-        if (_input != null) _input.OutgoingGain = Volume;
+        if (_player.PlaybackSession != null)
+            _player.PlaybackSession.Position = pos;
     }
 
     public void Close()
     {
-        try { _graph?.Stop(); } catch { }
-        if (_input != null) { try { _input.Dispose(); } catch { } _input = null; }
+        try { _player.Pause(); } catch { }
+        _player.Source = null;
         HasMedia = false;
-        IsPlaying = false;
+        CurrentTitle = CurrentArtist = string.Empty;
         LevelLeft = LevelRight = 0;
-        CurrentTitle = string.Empty;
+        if (_smtc != null) _smtc.IsEnabled = false;
         Changed?.Invoke();
+    }
+
+    /// <summary>Actualiza los niveles del VU. Llamado por el timer de UI ~15Hz.</summary>
+    public void TickLevels()
+    {
+        if (!HasMedia || !IsPlaying)
+        {
+            LevelLeft *= 0.6; LevelRight *= 0.6;
+            return;
+        }
+        // AudioStateMonitor da una pista del estado sonoro del MediaPlayer sin tocar samples.
+        // Modulamos con una pequeña variación natural para que las dos barras se sientan vivas.
+        var monitor = _player.AudioStateMonitor;
+        double baseLvl = monitor.SoundLevel switch
+        {
+            SoundLevel.Full  => 0.75,
+            SoundLevel.Muted => 0.05,
+            _                => 0.4
+        };
+        baseLvl *= _player.Volume;
+        var rng = Random.Shared;
+        double tL = Math.Clamp(baseLvl * (0.55 + rng.NextDouble() * 0.55), 0, 1);
+        double tR = Math.Clamp(baseLvl * (0.55 + rng.NextDouble() * 0.55), 0, 1);
+        LevelLeft  = tL > LevelLeft  ? tL : LevelLeft  + (tL - LevelLeft)  * 0.3;
+        LevelRight = tR > LevelRight ? tR : LevelRight + (tR - LevelRight) * 0.3;
+    }
+
+    // ── SMTC: integración con el panel de volumen / hardware keys ──
+    private void EnsureSmtc()
+    {
+        if (_smtc != null) return;
+        _smtc = _player.SystemMediaTransportControls;
+        _smtc.IsEnabled = true;
+        _smtc.IsPlayEnabled = true;
+        _smtc.IsPauseEnabled = true;
+        _smtc.IsStopEnabled = true;
+        _smtc.IsNextEnabled = false;
+        _smtc.IsPreviousEnabled = false;
+        _smtc.ButtonPressed += (_, e) =>
+        {
+            switch (e.Button)
+            {
+                case SystemMediaTransportControlsButton.Play:  _player.Play(); break;
+                case SystemMediaTransportControlsButton.Pause: _player.Pause(); break;
+                case SystemMediaTransportControlsButton.Stop:  Close(); break;
+            }
+        };
+    }
+
+    private void UpdateSmtcState()
+    {
+        if (_smtc == null) return;
+        _smtc.PlaybackStatus = _player.PlaybackSession.PlaybackState switch
+        {
+            MediaPlaybackState.Playing => MediaPlaybackStatus.Playing,
+            MediaPlaybackState.Paused  => MediaPlaybackStatus.Paused,
+            MediaPlaybackState.None    => MediaPlaybackStatus.Closed,
+            _                          => MediaPlaybackStatus.Stopped
+        };
+    }
+
+    private async Task UpdateSmtcMetadataAsync()
+    {
+        if (_smtc == null) return;
+        var u = _smtc.DisplayUpdater;
+        u.Type = MediaPlaybackType.Music;
+        u.MusicProperties.Title = string.IsNullOrEmpty(CurrentTitle) ? "MediaFy" : CurrentTitle;
+        u.MusicProperties.Artist = string.IsNullOrEmpty(CurrentArtist) ? "MediaFy by CG" : CurrentArtist;
+        try
+        {
+            // Portada: la del archivo si la pasaron; si no, el logo de la app
+            string coverPath = !string.IsNullOrEmpty(_currentCover) && File.Exists(_currentCover)
+                ? _currentCover
+                : Path.Combine(AppContext.BaseDirectory, "Assets", "logo.png");
+            if (File.Exists(coverPath))
+            {
+                var coverFile = await StorageFile.GetFileFromPathAsync(coverPath);
+                u.Thumbnail = RandomAccessStreamReference.CreateFromFile(coverFile);
+            }
+        }
+        catch { }
+        u.Update();
     }
 }

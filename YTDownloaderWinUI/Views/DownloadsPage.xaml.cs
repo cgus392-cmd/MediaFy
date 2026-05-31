@@ -33,6 +33,13 @@ public sealed partial class DownloadsPage : Page
     }
 
     // ── Vista previa (Fase 3) ──────────────────────────────────
+    /// <summary>Recibe una URL de fuera (CLI, protocolo, extensión) y la prepara para descargar.</summary>
+    public void PrefillUrl(string url)
+    {
+        TxtUrl.Text = url;
+        TxtUrl.Focus(FocusState.Programmatic);
+    }
+
     private async Task UpdatePreviewAsync()
     {
         string url = TxtUrl.Text.Trim();

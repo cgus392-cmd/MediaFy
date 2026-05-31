@@ -35,6 +35,10 @@ public partial class AppSettings : ObservableObject
     [ObservableProperty] private string _spotifyClientId = string.Empty;
     [ObservableProperty] private string _spotifyClientSecret = string.Empty;
     [ObservableProperty] private bool _libraryShowCovers = true;
+    [ObservableProperty] private bool _autoUpdateYtDlp = true;
+    [ObservableProperty] private bool _urlProtocolRegistered;
+    [ObservableProperty] private bool _notifyOnComplete = true;
+    [ObservableProperty] private bool _startWithWindows;
 
     private static Dictionary<string, bool> DefaultPlatforms() => new()
     {

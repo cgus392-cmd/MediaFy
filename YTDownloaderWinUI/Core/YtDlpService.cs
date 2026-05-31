@@ -26,6 +26,23 @@ public class YtDlpService
 
     public bool IsAvailable() => File.Exists(_ytDlpPath) && File.Exists(_ffmpegPath);
 
+    /// <summary>Ejecuta yt-dlp -U (auto-actualización al arrancar).</summary>
+    public async Task SelfUpdateAsync(CancellationToken ct = default)
+    {
+        if (!File.Exists(_ytDlpPath)) return;
+        try
+        {
+            using var proc = Process.Start(new ProcessStartInfo
+            {
+                FileName = _ytDlpPath, Arguments = "-U --no-colors",
+                RedirectStandardOutput = true, RedirectStandardError = true,
+                UseShellExecute = false, CreateNoWindow = true
+            })!;
+            await proc.WaitForExitAsync(ct);
+        }
+        catch { /* sin red, sin permisos, etc. */ }
+    }
+
     public async Task<VideoInfo> GetVideoInfoAsync(string url, CancellationToken ct = default)
     {
         string json = await RunAsync(_ytDlpPath, $"--dump-json --no-playlist \"{url}\"", ct);
