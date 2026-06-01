@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="YTDownloader.Views.OrganizerPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:models="using:YTDownloader.Models"
+    Background="Transparent">
+
+    <Grid Margin="20,12,20,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Encabezado -->
+        <StackPanel Grid.Row="0" Margin="8,0,8,12" Spacing="2">
+            <TextBlock Text="Organizador" FontSize="28" FontWeight="SemiBold" />
+            <TextBlock Text="Arrastra (o usa los botones) para mover tus descargas a la carpeta que quieras. Mantén Ctrl al arrastrar para copiar."
+                       FontSize="13" TextWrapping="Wrap"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+        </StackPanel>
+
+        <!-- Dos paneles + columna central de acciones -->
+        <Grid Grid.Row="1" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- ══ PANEL IZQUIERDO (descargas) ══ -->
+            <Border Grid.Column="0"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="10" Padding="12">
+                <Grid RowSpacing="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xE896;" FontSize="14"
+                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock Text="Descargas" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center" />
+                        <Border Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                                CornerRadius="10" Padding="8,1" VerticalAlignment="Center">
+                            <TextBlock x:Name="LeftCount" Text="0" FontSize="11"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Toolbar -->
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Click="LeftUp_Click"
+                                Background="Transparent" BorderThickness="0"
+                                Width="32" Height="32" Padding="0"
+                                ToolTipService.ToolTip="Carpeta superior">
+                            <FontIcon Glyph="&#xE74A;" FontSize="13" />
+                        </Button>
+                        <Border Grid.Column="1" Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                                CornerRadius="6" Padding="10,6" Margin="6,0">
+                            <TextBlock x:Name="LeftPath" Text="..." FontSize="12"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </Border>
+                        <Button Grid.Column="2" Click="LeftRefresh_Click"
+                                Background="Transparent" BorderThickness="0"
+                                Width="32" Height="32" Padding="0"
+                                ToolTipService.ToolTip="Actualizar">
+                            <FontIcon Glyph="&#xE72C;" FontSize="13" />
+                        </Button>
+                    </Grid>
+
+                    <!-- Lista -->
+                    <ListView Grid.Row="2" x:Name="LeftList"
+                              SelectionMode="Extended"
+                              CanDragItems="True"
+                              CanReorderItems="False"
+                              AllowDrop="True"
+                              DragItemsStarting="List_DragItemsStarting"
+                              DragOver="LeftList_DragOver"
+                              Drop="LeftList_Drop"
+                              DoubleTapped="LeftList_DoubleTapped">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="Padding" Value="10,8" />
+                                <Setter Property="Margin" Value="0,1" />
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="models:FileEntry">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <FontIcon Glyph="{x:Bind Icon}" FontSize="15" Margin="0,0,10,0"
+                                              Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                                    <TextBlock Grid.Column="1" Text="{x:Bind Name}" FontSize="13"
+                                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="2" Text="{x:Bind SizeText}" FontSize="11"
+                                               VerticalAlignment="Center" Margin="8,0,0,0"
+                                               Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+
+                    <TextBlock Grid.Row="3" x:Name="LeftStatus" Text=""
+                               FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                </Grid>
+            </Border>
+
+            <!-- ══ COLUMNA DE ACCIONES ══ -->
+            <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+                <Button Click="MoveRight_Click" Width="44" Height="44" Padding="0"
+                        ToolTipService.ToolTip="Mover a la derecha (Mover)">
+                    <FontIcon Glyph="&#xE76C;" FontSize="14" />
+                </Button>
+                <Button Click="CopyRight_Click" Width="44" Height="44" Padding="0"
+                        ToolTipService.ToolTip="Copiar a la derecha">
+                    <FontIcon Glyph="&#xE8C8;" FontSize="13" />
+                </Button>
+                <Rectangle Height="1" Fill="{ThemeResource CardStrokeColorDefaultBrush}" Margin="0,4" />
+                <Button Click="CopyLeft_Click" Width="44" Height="44" Padding="0"
+                        ToolTipService.ToolTip="Copiar a la izquierda">
+                    <FontIcon Glyph="&#xE8C8;" FontSize="13"
+                              RenderTransformOrigin="0.5,0.5">
+                        <FontIcon.RenderTransform><ScaleTransform ScaleX="1" /></FontIcon.RenderTransform>
+                    </FontIcon>
+                </Button>
+                <Button Click="MoveLeft_Click" Width="44" Height="44" Padding="0"
+                        ToolTipService.ToolTip="Mover a la izquierda (Mover)">
+                    <FontIcon Glyph="&#xE76B;" FontSize="14" />
+                </Button>
+                <Rectangle Height="1" Fill="{ThemeResource CardStrokeColorDefaultBrush}" Margin="0,4" />
+                <Button Click="NewFolder_Click" Width="44" Height="44" Padding="0"
+                        ToolTipService.ToolTip="Nueva carpeta (panel destino)">
+                    <FontIcon Glyph="&#xE8F4;" FontSize="14" />
+                </Button>
+                <Button Click="Rename_Click" Width="44" Height="44" Padding="0"
+                        ToolTipService.ToolTip="Renombrar">
+                    <FontIcon Glyph="&#xE8AC;" FontSize="13" />
+                </Button>
+                <Button Click="Delete_Click" Width="44" Height="44" Padding="0"
+                        ToolTipService.ToolTip="Eliminar">
+                    <FontIcon Glyph="&#xE74D;" FontSize="13" />
+                </Button>
+            </StackPanel>
+
+            <!-- ══ PANEL DERECHO (destino libre) ══ -->
+            <Border Grid.Column="2"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="10" Padding="12">
+                <Grid RowSpacing="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xE8F1;" FontSize="14"
+                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock Text="Destino" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center" />
+                        <Border Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                                CornerRadius="10" Padding="8,1" VerticalAlignment="Center">
+                            <TextBlock x:Name="RightCount" Text="0" FontSize="11"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </Border>
+                        <Button Click="RightChoose_Click"
+                                Background="Transparent" BorderThickness="0"
+                                Padding="8,2" Margin="6,0,0,0">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <FontIcon Glyph="&#xE8DA;" FontSize="12" />
+                                <TextBlock Text="Cambiar carpeta" FontSize="12" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Click="RightUp_Click"
+                                Background="Transparent" BorderThickness="0"
+                                Width="32" Height="32" Padding="0"
+                                ToolTipService.ToolTip="Carpeta superior">
+                            <FontIcon Glyph="&#xE74A;" FontSize="13" />
+                        </Button>
+                        <Border Grid.Column="1" Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                                CornerRadius="6" Padding="10,6" Margin="6,0">
+                            <TextBlock x:Name="RightPath" Text="..." FontSize="12"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </Border>
+                        <Button Grid.Column="2" Click="RightRefresh_Click"
+                                Background="Transparent" BorderThickness="0"
+                                Width="32" Height="32" Padding="0"
+                                ToolTipService.ToolTip="Actualizar">
+                            <FontIcon Glyph="&#xE72C;" FontSize="13" />
+                        </Button>
+                    </Grid>
+
+                    <ListView Grid.Row="2" x:Name="RightList"
+                              SelectionMode="Extended"
+                              CanDragItems="True"
+                              CanReorderItems="False"
+                              AllowDrop="True"
+                              DragItemsStarting="List_DragItemsStarting"
+                              DragOver="RightList_DragOver"
+                              Drop="RightList_Drop"
+                              DoubleTapped="RightList_DoubleTapped">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="Padding" Value="10,8" />
+                                <Setter Property="Margin" Value="0,1" />
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="models:FileEntry">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <FontIcon Glyph="{x:Bind Icon}" FontSize="15" Margin="0,0,10,0"
+                                              Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                                    <TextBlock Grid.Column="1" Text="{x:Bind Name}" FontSize="13"
+                                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="2" Text="{x:Bind SizeText}" FontSize="11"
+                                               VerticalAlignment="Center" Margin="8,0,0,0"
+                                               Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+
+                    <TextBlock Grid.Row="3" x:Name="RightStatus" Text=""
+                               FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Footer info -->
+        <TextBlock Grid.Row="2" x:Name="TxtStatus" Text="" Margin="8,10,0,0"
+                   FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+    </Grid>
+</Page>

@@ -40,6 +40,9 @@ public partial class AppSettings : ObservableObject
     [ObservableProperty] private bool _notifyOnComplete = true;
     [ObservableProperty] private bool _startWithWindows;
 
+    /// <summary>Última carpeta del panel destino del organizador (para recordarla entre sesiones).</summary>
+    [ObservableProperty] private string _organizerRightPath = string.Empty;
+
     private static Dictionary<string, bool> DefaultPlatforms() => new()
     {
         [nameof(Platform.YouTube)]     = true,

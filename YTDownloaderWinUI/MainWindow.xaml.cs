@@ -75,6 +75,7 @@ public sealed partial class MainWindow : Window
                 case "cascade":   ContentFrame.Navigate(typeof(CascadePage));   break;
                 case "library":   ContentFrame.Navigate(typeof(LibraryPage));   break;
                 case "editor":    ContentFrame.Navigate(typeof(EditorPage));    break;
+                case "organizer": ContentFrame.Navigate(typeof(OrganizerPage)); break;
                 case "resources": ContentFrame.Navigate(typeof(ResourcePage));  break;
                 case "about":     ContentFrame.Navigate(typeof(AboutPage));     break;
             }
