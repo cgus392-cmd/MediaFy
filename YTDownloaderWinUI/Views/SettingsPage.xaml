@@ -228,6 +228,59 @@
                 </StackPanel>
             </Border>
 
+            <!-- ══ Actualizaciones ══ -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="16">
+                <StackPanel Spacing="12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Glyph="&#xE777;" FontSize="18" VerticalAlignment="Center" Margin="0,0,12,0" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="Actualizaciones de MediaFy" FontWeight="SemiBold" />
+                            <TextBlock x:Name="UpdateStatusText" FontSize="12"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Text="—" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Button Grid.Column="2" x:Name="BtnCheckUpdate" Click="OnCheckUpdate" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <FontIcon Glyph="&#xE72C;" FontSize="13" />
+                                <TextBlock Text="Buscar" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                    <ProgressBar x:Name="UpdateProgress" Visibility="Collapsed" Minimum="0" Maximum="100" />
+                    <StackPanel x:Name="UpdateActions" Orientation="Horizontal" Spacing="8" Visibility="Collapsed">
+                        <Button x:Name="BtnDownloadUpdate" Click="OnDownloadUpdate"
+                                Style="{ThemeResource AccentButtonStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <FontIcon Glyph="&#xE896;" FontSize="13" />
+                                <TextBlock x:Name="BtnDownloadText" Text="Descargar e instalar" />
+                            </StackPanel>
+                        </Button>
+                        <HyperlinkButton x:Name="LinkReleaseNotes" Content="Ver notas de la versión" />
+                    </StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Buscar al iniciar" FontSize="12" FontWeight="SemiBold" />
+                            <TextBlock Text="MediaFy comprueba si hay una versión nueva cada vez que arrancas."
+                                       FontSize="11" TextWrapping="Wrap"
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" MinWidth="0"
+                                      IsOn="{x:Bind core:AppSettings.Current.AutoCheckUpdates, Mode=TwoWay}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
             <!-- ══ Integración con Windows ══ -->
             <TextBlock Text="Integración con Windows" FontSize="18" FontWeight="SemiBold" Margin="2,10,0,0" />
             <TextBlock Text="Cómo MediaFy se comporta como una app del sistema."

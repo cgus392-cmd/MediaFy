@@ -43,6 +43,10 @@ public sealed partial class MainWindow : Window
         SetupTray();
         AppWindow.Closing += OnClosing;
 
+        // Banner de actualización: se muestra cuando el UpdateService la detecta
+        App.Updater.StateChanged += s => DispatcherQueue.TryEnqueue(RefreshUpdateBanner);
+        RefreshUpdateBanner();
+
         // Si se inició como autoarranque con Windows, la ventana no aparece (solo la bandeja)
         if (App.StartedInTray) AppWindow.Hide();
 
@@ -135,6 +139,51 @@ public sealed partial class MainWindow : Window
 
     [DllImport("user32.dll")]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    private bool _updateBannerDismissed;
+
+    private void RefreshUpdateBanner()
+    {
+        if (_updateBannerDismissed) { UpdateBanner.Visibility = Visibility.Collapsed; return; }
+        var u = App.Updater;
+        if (u.State == Core.UpdateState.Available && u.Latest != null)
+        {
+            UpdateBanner.Visibility = Visibility.Visible;
+            UpdateBannerText.Text = $"MediaFy {u.Latest.Version} está disponible.";
+            UpdateBannerActionText.Text = "Ver actualización";
+        }
+        else if (u.State == Core.UpdateState.ReadyToInstall && u.Latest != null)
+        {
+            UpdateBanner.Visibility = Visibility.Visible;
+            UpdateBannerText.Text = $"MediaFy {u.Latest.Version} listo para instalar.";
+            UpdateBannerActionText.Text = "Instalar ahora";
+        }
+        else
+        {
+            UpdateBanner.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void UpdateBanner_Action_Click(object sender, RoutedEventArgs e)
+    {
+        if (App.Updater.State == Core.UpdateState.ReadyToInstall)
+        {
+            App.Updater.Install();
+            return;
+        }
+        // Si solo está disponible (aún no descargada), llevar al usuario a Configuración para decidir
+        ContentFrame.Navigate(typeof(SettingsPage));
+        foreach (var obj in Nav.MenuItems)
+            if (obj is NavigationViewItem nvi && (string?)nvi.Tag is null) { /* no-op */ }
+        // No hay item de menú con tag "settings" — usar el item built-in Settings:
+        Nav.SelectedItem = Nav.SettingsItem;
+    }
+
+    private void UpdateBanner_Dismiss_Click(object sender, RoutedEventArgs e)
+    {
+        _updateBannerDismissed = true;
+        UpdateBanner.Visibility = Visibility.Collapsed;
+    }
 
     /// <summary>Trae la ventana al frente (la usa la activación entrante).</summary>
     public void BringToFront()

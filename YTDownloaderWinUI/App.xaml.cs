@@ -12,6 +12,7 @@ public partial class App : Application
     public static DownloadManager DownloadManager { get; } = new();
     public static CascadeManager CascadeManager { get; } = new();
     public static PlaybackService Playback { get; } = new();
+    public static UpdateService Updater { get; } = new();
     public static Window? MainWindow { get; private set; }
 
     public App()
@@ -48,6 +49,10 @@ public partial class App : Application
             // Auto-update yt-dlp en background si está activado
             if (AppSettings.Current.AutoUpdateYtDlp)
                 _ = Task.Run(async () => { try { await DownloadManager.UpdateYtDlpAsync(); } catch { } });
+
+            // Búsqueda de actualizaciones de la app al arrancar
+            if (AppSettings.Current.AutoCheckUpdates)
+                _ = Task.Run(async () => { try { await Updater.CheckAsync(); } catch { } });
         }
         catch (Exception ex)
         {

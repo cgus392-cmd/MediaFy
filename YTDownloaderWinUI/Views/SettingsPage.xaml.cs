@@ -33,6 +33,76 @@ public sealed partial class SettingsPage : Page
 
         TogProtocol.IsOn = Core.UrlProtocol.IsRegistered();
         TogStartup.IsOn  = Core.StartupManager.IsEnabled();
+
+        // ── Actualizaciones ──
+        App.Updater.StateChanged += OnUpdateState;
+        App.Updater.DownloadProgress += p => DispatcherQueue.TryEnqueue(() => UpdateProgress.Value = p);
+        RefreshUpdateUI();
+    }
+
+    private void OnUpdateState(Core.UpdateState s) => DispatcherQueue.TryEnqueue(RefreshUpdateUI);
+
+    private void RefreshUpdateUI()
+    {
+        var u = App.Updater;
+        string cur = Core.UpdateService.CurrentVersion();
+        UpdateProgress.Visibility = u.State == Core.UpdateState.Downloading ? Visibility.Visible : Visibility.Collapsed;
+        UpdateActions.Visibility  = (u.State == Core.UpdateState.Available || u.State == Core.UpdateState.ReadyToInstall) ? Visibility.Visible : Visibility.Collapsed;
+        BtnCheckUpdate.IsEnabled = u.State is not (Core.UpdateState.Checking or Core.UpdateState.Downloading);
+
+        UpdateStatusText.Text = u.State switch
+        {
+            Core.UpdateState.Idle            => $"Versión actual: {cur}",
+            Core.UpdateState.Checking        => "Comprobando actualizaciones...",
+            Core.UpdateState.UpToDate        => $"Estás en la última versión ({cur}) ✓",
+            Core.UpdateState.Available       => $"Versión nueva disponible: {u.Latest?.Version}  (tu versión: {cur})",
+            Core.UpdateState.Downloading     => $"Descargando MediaFy {u.Latest?.Version}...",
+            Core.UpdateState.ReadyToInstall  => $"Lista para instalar MediaFy {u.Latest?.Version}",
+            Core.UpdateState.Error           => $"Error: {u.LastError}",
+            _                                => $"Versión actual: {cur}"
+        };
+
+        if (u.Latest != null)
+            LinkReleaseNotes.NavigateUri = !string.IsNullOrEmpty(u.Latest.HtmlUrl) ? new Uri(u.Latest.HtmlUrl) : null;
+
+        BtnDownloadText.Text = u.State == Core.UpdateState.ReadyToInstall ? "Instalar ahora" : "Descargar e instalar";
+    }
+
+    private async void OnCheckUpdate(object sender, RoutedEventArgs e)
+    {
+        await App.Updater.CheckAsync();
+    }
+
+    private async void OnDownloadUpdate(object sender, RoutedEventArgs e)
+    {
+        var u = App.Updater;
+        if (u.State == Core.UpdateState.ReadyToInstall)
+        {
+            if (!u.IsInstalledLocation())
+            {
+                var dlg = new ContentDialog
+                {
+                    Title = "Versión portable",
+                    Content = "Estás ejecutando MediaFy en modo portable. Descarga el instalador y reemplaza tus archivos manualmente, o vuelve a descomprimir la nueva versión.",
+                    PrimaryButtonText = "Abrir página de la versión",
+                    CloseButtonText = "Cerrar",
+                    XamlRoot = XamlRoot
+                };
+                if (await dlg.ShowAsync() == ContentDialogResult.Primary && u.Latest != null)
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    { FileName = u.Latest.HtmlUrl, UseShellExecute = true });
+                return;
+            }
+            u.Install();
+            // El instalador silencioso cerrará MediaFy y la relanzará al terminar
+            return;
+        }
+
+        if (u.State == Core.UpdateState.Available)
+        {
+            bool ok = await u.DownloadAsync();
+            // Cuando termine, el botón cambia a "Instalar ahora" automáticamente vía RefreshUpdateUI
+        }
     }
 
     private void OnBackdropChanged(object sender, SelectionChangedEventArgs e)

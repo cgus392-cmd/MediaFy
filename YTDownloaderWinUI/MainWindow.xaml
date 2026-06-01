@@ -123,7 +123,41 @@
                 </muxc:NavigationViewItem>
             </muxc:NavigationView.MenuItems>
 
-            <Frame x:Name="ContentFrame" />
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- Banner de actualización (oculto por defecto) -->
+                <Border x:Name="UpdateBanner" Grid.Row="0" Visibility="Collapsed"
+                        Margin="12,8,12,0" Padding="14,10" CornerRadius="8"
+                        Background="{ThemeResource AccentFillColorDefaultBrush}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Glyph="&#xE777;" FontSize="16" Foreground="White"
+                                  VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <TextBlock Grid.Column="1" x:Name="UpdateBannerText" Foreground="White"
+                                   VerticalAlignment="Center" FontSize="13" />
+                        <Button Grid.Column="2" Click="UpdateBanner_Action_Click"
+                                Background="White" Foreground="Black" Padding="14,4" Margin="0,0,8,0">
+                            <TextBlock x:Name="UpdateBannerActionText" Text="Ir a Configuración" FontWeight="SemiBold" />
+                        </Button>
+                        <Button Grid.Column="3" Click="UpdateBanner_Dismiss_Click"
+                                Background="Transparent" BorderThickness="0" Width="32" Height="32" Padding="0"
+                                ToolTipService.ToolTip="Cerrar">
+                            <FontIcon Glyph="&#xE711;" FontSize="11" Foreground="White" />
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <Frame x:Name="ContentFrame" Grid.Row="1" />
+            </Grid>
         </muxc:NavigationView>
 
         <!-- Reproductor expandido (solo en Biblioteca) -->
