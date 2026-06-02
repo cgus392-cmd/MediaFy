@@ -45,6 +45,9 @@ public partial class AppSettings : ObservableObject
     /// <summary>True una vez que el tutorial de bienvenida se completa por primera vez.</summary>
     [ObservableProperty] private bool _welcomeShown;
 
+    /// <summary>True cuando el usuario aceptó los términos de uso y el descargo de responsabilidad.</summary>
+    [ObservableProperty] private bool _termsAccepted;
+
     /// <summary>Última carpeta del panel destino del organizador (para recordarla entre sesiones).</summary>
     [ObservableProperty] private string _organizerRightPath = string.Empty;
 
@@ -57,6 +60,9 @@ public partial class AppSettings : ObservableObject
     [ObservableProperty] private string _defaultSubtitles = "Off";
     /// <summary>Al descargar una lista/álbum completo, crear una carpeta con su nombre y numerar las pistas.</summary>
     [ObservableProperty] private bool _playlistSubfolder = true;
+
+    /// <summary>Forma del mini-reproductor flotante: "Bar" (barra) o "Square" (cuadrado).</summary>
+    [ObservableProperty] private string _miniPlayerMode = "Bar";
 
     private static Dictionary<string, bool> DefaultPlatforms() => new()
     {

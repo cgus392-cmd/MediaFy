@@ -340,6 +340,21 @@ public sealed partial class MainWindow : Window
 
     private void Gp_Close_Click(object sender, RoutedEventArgs e) => App.Playback.Close();
 
+    private MiniPlayerWindow? _miniPlayer;
+    private void Gp_PopOut_Click(object sender, RoutedEventArgs e)
+    {
+        if (_miniPlayer is null)
+        {
+            _miniPlayer = new MiniPlayerWindow();
+            _miniPlayer.Closed += (_, _) => _miniPlayer = null;
+            _miniPlayer.Activate();
+        }
+        else
+        {
+            _miniPlayer.Activate(); // ya abierto: traerlo al frente
+        }
+    }
+
     // ── VU meter (MediaPlayer + AudioStateMonitor, ligero, sin glitches) ──
     private void VuTimer_Tick(object? sender, object e)
     {

@@ -24,6 +24,8 @@ public class PlaybackService
     public MediaPlayer Player => _player;
     public string CurrentTitle { get; private set; } = string.Empty;
     public string CurrentArtist { get; private set; } = string.Empty;
+    /// <summary>Ruta de la portada actual (si la hay), para el mini-reproductor.</summary>
+    public string? CurrentCover => _currentCover;
     public bool HasMedia { get; private set; }
 
     public bool IsPlaying => _player.PlaybackSession?.PlaybackState == MediaPlaybackState.Playing;
