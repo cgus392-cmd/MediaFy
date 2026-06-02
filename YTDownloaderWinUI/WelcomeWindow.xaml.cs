@@ -1,7 +1,10 @@
+using System.Numerics;
 using Microsoft.UI;
+using Microsoft.UI.Composition;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Shapes;
 using Windows.Graphics;
@@ -122,30 +125,155 @@ public sealed partial class WelcomeWindow : Window
                                  isFirst ? "Comenzar" : "Siguiente";
 
         // Mockup
-        if (s.Hero || string.IsNullOrEmpty(s.ScreenshotFile))
+        bool showHero = s.Hero || string.IsNullOrEmpty(s.ScreenshotFile);
+        string path = showHero ? "" : Path.Combine(AppContext.BaseDirectory, "Assets", "tutorial", s.ScreenshotFile!);
+        if (!showHero && !File.Exists(path)) showHero = true;
+
+        if (showHero)
         {
             HeroPanel.Visibility = Visibility.Visible;
             ShotFrame.Visibility = Visibility.Collapsed;
         }
         else
         {
-            string path = Path.Combine(AppContext.BaseDirectory, "Assets", "tutorial", s.ScreenshotFile);
-            if (File.Exists(path))
-            {
-                ShotImage.Source = new BitmapImage(new Uri(path));
-                ShotFrame.Visibility = Visibility.Visible;
-                HeroPanel.Visibility = Visibility.Collapsed;
-            }
-            else
-            {
-                HeroPanel.Visibility = Visibility.Visible;
-                ShotFrame.Visibility = Visibility.Collapsed;
-            }
+            ShotImage.Source = new BitmapImage(new Uri(path));
+            ShotFrame.Visibility = Visibility.Visible;
+            HeroPanel.Visibility = Visibility.Collapsed;
         }
 
         PrevBtn.IsEnabled = _index > 0;
         NextBtn.IsEnabled = _index < _steps.Count - 1;
         BuildDots();
+
+        // Animaciones de entrada (que se sienta vivo)
+        AnimateTextIn();
+        if (showHero) PlayHeroIntro();
+        else AnimateMockupIn();
+    }
+
+    // ---------------------------------------------------------------
+    //  Animaciones (Composition) — entrada espectacular del tutorial
+    // ---------------------------------------------------------------
+    private bool _heroBreathing;
+
+    private void AnimateTextIn()
+    {
+        SlideFadeUp(TitleText, 30f, 0, 620);
+        SlideFadeUp(DescText, 30f, 90, 620);
+        SlideFadeUp(PrimaryButton, 30f, 180, 620);
+    }
+
+    private void AnimateMockupIn()
+    {
+        var v = ElementCompositionPreview.GetElementVisual(ShotFrame);
+        var comp = v.Compositor;
+        v.CenterPoint = new Vector3(250f, 250f, 0f); // 500/2
+        v.Opacity = 0f;
+        v.Scale = new Vector3(0.94f);
+
+        var fade = comp.CreateScalarKeyFrameAnimation();
+        fade.InsertKeyFrame(1f, 1f);
+        fade.Duration = TimeSpan.FromMilliseconds(500);
+        v.StartAnimation("Opacity", fade);
+
+        var ease = comp.CreateCubicBezierEasingFunction(new Vector2(0.1f, 0.9f), new Vector2(0.2f, 1f));
+        var scale = comp.CreateVector3KeyFrameAnimation();
+        scale.InsertKeyFrame(1f, Vector3.One, ease);
+        scale.Duration = TimeSpan.FromMilliseconds(640);
+        v.StartAnimation("Scale", scale);
+    }
+
+    private void PlayHeroIntro()
+    {
+        // Logo: aparece con un resorte elastico
+        var logo = ElementCompositionPreview.GetElementVisual(HeroLogo);
+        var comp = logo.Compositor;
+        logo.CenterPoint = new Vector3(80f, 80f, 0f);
+        logo.Opacity = 0f;
+        logo.Scale = new Vector3(0.4f);
+
+        var logoFade = comp.CreateScalarKeyFrameAnimation();
+        logoFade.InsertKeyFrame(1f, 1f);
+        logoFade.Duration = TimeSpan.FromMilliseconds(450);
+        logo.StartAnimation("Opacity", logoFade);
+
+        var spring = comp.CreateSpringVector3Animation();
+        spring.FinalValue = Vector3.One;
+        spring.DampingRatio = 0.42f;
+        spring.Period = TimeSpan.FromMilliseconds(55);
+        logo.StartAnimation("Scale", spring);
+
+        // Halos: se desvanecen hacia dentro, escalonados
+        HaloFadeIn(HeroHalo3, 0.05f, 120);
+        HaloFadeIn(HeroHalo1, 0.08f, 60);
+        HaloFadeIn(HeroHalo2, 0.12f, 0);
+
+        // ...y luego respiran en bucle infinito (una sola vez)
+        if (!_heroBreathing)
+        {
+            _heroBreathing = true;
+            Breathe(HeroHalo3, 170f, 1.0f, 1.06f, 5200, 0);
+            Breathe(HeroHalo1, 140f, 1.0f, 1.09f, 4400, 350);
+            Breathe(HeroHalo2, 100f, 1.0f, 1.13f, 3600, 700);
+        }
+    }
+
+    private void HaloFadeIn(UIElement el, float baseOpacity, double delayMs)
+    {
+        var v = ElementCompositionPreview.GetElementVisual(el);
+        var comp = v.Compositor;
+        v.Opacity = 0f;
+        var fade = comp.CreateScalarKeyFrameAnimation();
+        fade.InsertKeyFrame(1f, baseOpacity);
+        fade.Duration = TimeSpan.FromMilliseconds(650);
+        fade.DelayTime = TimeSpan.FromMilliseconds(delayMs);
+        fade.DelayBehavior = AnimationDelayBehavior.SetInitialValueBeforeDelay;
+        v.StartAnimation("Opacity", fade);
+    }
+
+    private void Breathe(UIElement el, float half, float min, float max, double periodMs, double delayMs)
+    {
+        var v = ElementCompositionPreview.GetElementVisual(el);
+        var comp = v.Compositor;
+        v.CenterPoint = new Vector3(half, half, 0f);
+
+        var io = comp.CreateCubicBezierEasingFunction(new Vector2(0.45f, 0f), new Vector2(0.55f, 1f));
+        var anim = comp.CreateVector3KeyFrameAnimation();
+        anim.InsertKeyFrame(0f, new Vector3(min));
+        anim.InsertKeyFrame(0.5f, new Vector3(max), io);
+        anim.InsertKeyFrame(1f, new Vector3(min), io);
+        anim.Duration = TimeSpan.FromMilliseconds(periodMs);
+        anim.IterationBehavior = AnimationIterationBehavior.Forever;
+        if (delayMs > 0)
+        {
+            anim.DelayTime = TimeSpan.FromMilliseconds(delayMs);
+            anim.DelayBehavior = AnimationDelayBehavior.SetInitialValueBeforeDelay;
+        }
+        v.StartAnimation("Scale", anim);
+    }
+
+    private void SlideFadeUp(UIElement el, float fromY, double delayMs, double durMs)
+    {
+        ElementCompositionPreview.SetIsTranslationEnabled(el, true);
+        var v = ElementCompositionPreview.GetElementVisual(el);
+        var comp = v.Compositor;
+        v.Opacity = 0f;
+        v.Properties.InsertVector3("Translation", new Vector3(0f, fromY, 0f));
+
+        var fade = comp.CreateScalarKeyFrameAnimation();
+        fade.InsertKeyFrame(1f, 1f);
+        fade.Duration = TimeSpan.FromMilliseconds(durMs);
+        fade.DelayTime = TimeSpan.FromMilliseconds(delayMs);
+        fade.DelayBehavior = AnimationDelayBehavior.SetInitialValueBeforeDelay;
+        v.StartAnimation("Opacity", fade);
+
+        var ease = comp.CreateCubicBezierEasingFunction(new Vector2(0.1f, 0.9f), new Vector2(0.2f, 1f));
+        var move = comp.CreateVector3KeyFrameAnimation();
+        move.InsertKeyFrame(1f, Vector3.Zero, ease);
+        move.Duration = TimeSpan.FromMilliseconds(durMs);
+        move.DelayTime = TimeSpan.FromMilliseconds(delayMs);
+        move.DelayBehavior = AnimationDelayBehavior.SetInitialValueBeforeDelay;
+        v.StartAnimation("Translation", move);
     }
 
     private void Primary_Click(object sender, RoutedEventArgs e)

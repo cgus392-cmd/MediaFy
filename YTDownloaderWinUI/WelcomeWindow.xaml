@@ -45,29 +45,38 @@
 
             <!-- Columna derecha: mockup -->
             <Grid Grid.Column="1" VerticalAlignment="Center">
-                <!-- Estado 1: hero (logo grande) -->
+                <!-- Estado 1: hero (logo grande con halos que respiran) -->
                 <Grid x:Name="HeroPanel" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Border Width="280" Height="280" CornerRadius="36"
+                    <Border x:Name="HeroHalo3" Width="340" Height="340" CornerRadius="44"
+                            Background="{ThemeResource AccentFillColorDefaultBrush}"
+                            Opacity="0.05" />
+                    <Border x:Name="HeroHalo1" Width="280" Height="280" CornerRadius="36"
                             Background="{ThemeResource AccentFillColorDefaultBrush}"
                             Opacity="0.08" />
-                    <Border Width="200" Height="200" CornerRadius="28"
+                    <Border x:Name="HeroHalo2" Width="200" Height="200" CornerRadius="28"
                             Background="{ThemeResource AccentFillColorDefaultBrush}"
                             Opacity="0.12" />
-                    <Image Source="ms-appx:///Assets/logo.png" Width="160" Height="160" />
+                    <Image x:Name="HeroLogo" Source="ms-appx:///Assets/logo.png" Width="160" Height="160" />
                 </Grid>
 
-                <!-- Estado 2: captura tipo "monitor" -->
-                <Border x:Name="ShotFrame" Visibility="Collapsed" CornerRadius="14"
-                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                        BorderThickness="1" Padding="0">
-                    <Border.Background>
-                        <AcrylicBrush TintColor="{ThemeResource SolidBackgroundFillColorBase}"
-                                      TintOpacity="0.4" TintLuminosityOpacity="0.85"
-                                      FallbackColor="{ThemeResource SolidBackgroundFillColorSecondary}" />
-                    </Border.Background>
-                    <Image x:Name="ShotImage" Stretch="Uniform" Margin="6"
+                <!-- Estado 2: captura DENTRO del mockup de laptop -->
+                <Grid x:Name="ShotFrame" Visibility="Collapsed"
+                      Width="500" Height="500"
+                      HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <!-- La captura va detras y se asoma por el hueco transparente de la pantalla.
+                         Rect del hueco medido sobre laptop.png (1417px): X 17.5%, Y 33%, W 65%, H 37.5%.
+                         A 500px: X=87.5 Y=165 W=325 H=187.5; lo expandimos ~6px para que se meta bajo el bisel. -->
+                    <Border Width="329" Height="192" Margin="86,163,0,0"
+                            HorizontalAlignment="Left" VerticalAlignment="Top"
+                            CornerRadius="3" Background="#0A0A0A">
+                        <Image x:Name="ShotImage" Stretch="UniformToFill"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <!-- Marco del laptop encima (PNG con pantalla transparente) -->
+                    <Image Source="ms-appx:///Assets/laptop.png"
+                           Width="500" Height="500" IsHitTestVisible="False"
                            HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Border>
+                </Grid>
             </Grid>
         </Grid>
 
