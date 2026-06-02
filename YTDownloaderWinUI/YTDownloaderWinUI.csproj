@@ -16,9 +16,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>MediaFy</AssemblyName>
-    <Version>1.5.2</Version>
-    <FileVersion>1.5.2.0</FileVersion>
-    <AssemblyVersion>1.5.2.0</AssemblyVersion>
+    <Version>1.5.3</Version>
+    <FileVersion>1.5.3.0</FileVersion>
+    <AssemblyVersion>1.5.3.0</AssemblyVersion>
     <ApplicationIcon>Assets\logo.ico</ApplicationIcon>
     <EnableMsixTooling>true</EnableMsixTooling>
     <StartupObject>YTDownloader.Program</StartupObject>

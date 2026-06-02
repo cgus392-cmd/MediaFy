@@ -1,6 +1,6 @@
 ; Instalador de MediaFy by CG — CG LABS
 #define MyAppName "MediaFy"
-#define MyAppVersion "1.5.2"
+#define MyAppVersion "1.5.3"
 #define MyAppPublisher "CG LABS"
 #define MyAppURL "https://github.com/cgus392-cmd"
 #define MyAppExeName "MediaFy.exe"
@@ -48,3 +48,16 @@ Name: "{autodesktop}\MediaFy"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktop
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,MediaFy}"; Flags: nowait postinstall skipifsilent
+
+[Code]
+// Cierra cualquier instancia previa de MediaFy (y sus procesos hijos) antes de copiar
+// archivos, para que la actualización no falle con "deshaciendo cambios".
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  ResultCode: Integer;
+begin
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /T /IM {#MyAppExeName}', '',
+       SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Sleep(700);
+  Result := '';
+end;

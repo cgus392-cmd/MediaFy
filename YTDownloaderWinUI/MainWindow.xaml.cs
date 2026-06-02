@@ -136,8 +136,15 @@ public sealed partial class MainWindow : Window
     private void ExitApp()
     {
         _reallyExit = true;
-        try { _tray?.Dispose(); } catch { }
-        Close();
+        // Limpieza ordenada antes de terminar
+        try { _tray?.Dispose(); _tray = null; } catch { }
+        try { App.Playback.Close(); } catch { }
+        try { App.Clipboard.Disable(); } catch { }
+
+        // Garantiza la muerte del proceso y de TODOS sus hijos (yt-dlp/ffmpeg):
+        // WinUI 3 + MediaPlayer + bandeja suelen dejar el proceso vivo si solo cerramos la ventana.
+        try { System.Diagnostics.Process.GetCurrentProcess().Kill(entireProcessTree: true); }
+        catch { Environment.Exit(0); }
     }
 
     [DllImport("user32.dll")]
