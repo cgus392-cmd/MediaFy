@@ -361,6 +361,24 @@
                 </Grid>
             </Border>
 
+            <!-- Vigilar portapapeles -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="16">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xF0E3;" FontSize="18" VerticalAlignment="Top" Margin="0,2,12,0" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Vigilar el portapapeles" FontWeight="SemiBold" />
+                        <TextBlock TextWrapping="Wrap" FontSize="12"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   Text="Cuando copies un enlace soportado (YouTube, Spotify, SoundCloud, etc.), MediaFy mostrará una pequeña sugerencia para descargarlo." />
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="2" VerticalAlignment="Center" MinWidth="0"
+                                  IsOn="{x:Bind core:AppSettings.Current.ClipboardWatch, Mode=TwoWay}" />
+                </Grid>
+            </Border>
+
             <!-- Extensión de navegador -->
             <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"

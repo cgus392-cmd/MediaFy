@@ -79,6 +79,31 @@
                 </StackPanel>
             </Border>
 
+            <!-- Ver introducción otra vez -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="16">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE946;" FontSize="18" VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Introducción a MediaFy" FontWeight="SemiBold" />
+                        <TextBlock Text="Vuelve a ver el tutorial guiado paso a paso."
+                                   FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                    <Button Grid.Column="2" Click="BtnShowTutorial_Click" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE768;" FontSize="13" />
+                            <TextBlock Text="Ver introducción" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Border>
+
             <TextBlock TextAlignment="Center" FontSize="11" Margin="0,4,0,0"
                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                        Text="Construido con WinUI 3 · Windows App SDK · yt-dlp · ffmpeg" />

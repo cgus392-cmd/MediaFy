@@ -47,6 +47,9 @@ public sealed partial class MainWindow : Window
         App.Updater.StateChanged += s => DispatcherQueue.TryEnqueue(RefreshUpdateBanner);
         RefreshUpdateBanner();
 
+        // Banner del portapapeles: el watcher dispara cuando hay URL válida
+        App.Clipboard.UrlDetected += url => DispatcherQueue.TryEnqueue(() => ShowClipboardBanner(url));
+
         // Si se inició como autoarranque con Windows, la ventana no aparece (solo la bandeja)
         if (App.StartedInTray) AppWindow.Hide();
 
@@ -141,6 +144,87 @@ public sealed partial class MainWindow : Window
     private static extern bool SetForegroundWindow(IntPtr hWnd);
 
     private bool _updateBannerDismissed;
+    private string _clipboardSuggestedUrl = string.Empty;
+
+    // ── Banner del portapapeles ────────────────────────────────
+    private void ShowClipboardBanner(string url)
+    {
+        _clipboardSuggestedUrl = url;
+        ClipboardUrlText.Text = url.Length > 80 ? url[..77] + "..." : url;
+        ClipboardBanner.Visibility = Visibility.Visible;
+    }
+
+    private void ClipboardBanner_Download_Click(object sender, RoutedEventArgs e)
+    {
+        ClipboardBanner.Visibility = Visibility.Collapsed;
+        if (!string.IsNullOrEmpty(_clipboardSuggestedUrl))
+        {
+            NavigateTo("downloads");
+            if (ContentFrame.Content is Views.DownloadsPage dp)
+                dp.PrefillUrl(_clipboardSuggestedUrl);
+        }
+    }
+
+    private void ClipboardBanner_Dismiss_Click(object sender, RoutedEventArgs e)
+        => ClipboardBanner.Visibility = Visibility.Collapsed;
+
+    // ── Drag & drop sobre toda la ventana ──────────────────────
+    private void Root_DragOver(object sender, DragEventArgs e)
+    {
+        if (e.DataView.Contains(Windows.ApplicationModel.DataTransfer.StandardDataFormats.StorageItems) ||
+            e.DataView.Contains(Windows.ApplicationModel.DataTransfer.StandardDataFormats.WebLink) ||
+            e.DataView.Contains(Windows.ApplicationModel.DataTransfer.StandardDataFormats.Text))
+        {
+            e.AcceptedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Copy;
+            e.DragUIOverride.Caption = "Soltar para descargar / abrir en MediaFy";
+            e.DragUIOverride.IsCaptionVisible = true;
+            e.DragUIOverride.IsContentVisible = true;
+            e.DragUIOverride.IsGlyphVisible = true;
+        }
+        else e.AcceptedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.None;
+    }
+
+    private async void Root_Drop(object sender, DragEventArgs e)
+    {
+        var def = e.GetDeferral();
+        try
+        {
+            // 1) ¿Soltaron un enlace web?
+            if (e.DataView.Contains(Windows.ApplicationModel.DataTransfer.StandardDataFormats.WebLink))
+            {
+                var uri = await e.DataView.GetWebLinkAsync();
+                HandleIncomingUrl(uri.ToString());
+                return;
+            }
+            // 2) ¿Texto que parezca URL?
+            if (e.DataView.Contains(Windows.ApplicationModel.DataTransfer.StandardDataFormats.Text))
+            {
+                string t = (await e.DataView.GetTextAsync()).Trim();
+                if (Core.PlatformDetector.LooksLikeUrl(t)) { HandleIncomingUrl(t); return; }
+            }
+            // 3) ¿Archivos? → abrir en el Editor si es media, o llevar a Biblioteca si no
+            if (e.DataView.Contains(Windows.ApplicationModel.DataTransfer.StandardDataFormats.StorageItems))
+            {
+                var items = await e.DataView.GetStorageItemsAsync();
+                foreach (var it in items)
+                {
+                    if (it is Windows.Storage.StorageFile sf)
+                    {
+                        string ext = System.IO.Path.GetExtension(sf.Path).ToLowerInvariant();
+                        if (Array.IndexOf(Models.LibraryFile.MediaExtensions, ext) >= 0)
+                        {
+                            ContentFrame.Navigate(typeof(Views.EditorPage), sf.Path);
+                            return;
+                        }
+                    }
+                }
+                // Si nada era media, simplemente navega a Biblioteca
+                NavigateTo("library");
+            }
+        }
+        catch { }
+        finally { def.Complete(); }
+    }
 
     private void RefreshUpdateBanner()
     {

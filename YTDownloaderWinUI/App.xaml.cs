@@ -13,6 +13,7 @@ public partial class App : Application
     public static CascadeManager CascadeManager { get; } = new();
     public static PlaybackService Playback { get; } = new();
     public static UpdateService Updater { get; } = new();
+    public static ClipboardWatcher Clipboard { get; } = new();
     public static Window? MainWindow { get; private set; }
 
     public App()
@@ -42,6 +43,13 @@ public partial class App : Application
             MainWindow = new MainWindow();
             if (!StartedInTray) MainWindow.Activate();
 
+            // Mostrar tutorial de bienvenida solo la primera vez
+            if (!StartedInTray && !AppSettings.Current.WelcomeShown)
+            {
+                var w = new WelcomeWindow();
+                w.Activate();
+            }
+
             // Procesa la activación inicial (CLI args o mediafy://...)
             var initial = AppInstance.GetCurrent().GetActivatedEventArgs();
             ProcessActivation(initial);
@@ -53,6 +61,17 @@ public partial class App : Application
             // Búsqueda de actualizaciones de la app al arrancar
             if (AppSettings.Current.AutoCheckUpdates)
                 _ = Task.Run(async () => { try { await Updater.CheckAsync(); } catch { } });
+
+            // Vigilar portapapeles si el usuario lo activó
+            if (AppSettings.Current.ClipboardWatch) Clipboard.Enable();
+            AppSettings.Current.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(AppSettings.ClipboardWatch))
+                {
+                    if (AppSettings.Current.ClipboardWatch) Clipboard.Enable();
+                    else Clipboard.Disable();
+                }
+            };
         }
         catch (Exception ex)
         {

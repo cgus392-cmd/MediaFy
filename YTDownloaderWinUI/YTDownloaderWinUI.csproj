@@ -44,6 +44,11 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Content Include="Assets\logo.png" />
+    <!-- Capturas usadas por el tutorial de bienvenida -->
+    <None Include="..\docs\screenshots\*.png">
+      <Link>Assets\tutorial\%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <!-- La carpeta de la extensión de navegador viaja con la app -->
     <None Include="..\extension\**\*">
       <Link>extension\%(RecursiveDir)%(Filename)%(Extension)</Link>

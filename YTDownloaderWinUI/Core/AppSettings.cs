@@ -40,6 +40,10 @@ public partial class AppSettings : ObservableObject
     [ObservableProperty] private bool _notifyOnComplete = true;
     [ObservableProperty] private bool _startWithWindows;
     [ObservableProperty] private bool _autoCheckUpdates = true;
+    /// <summary>Si está activo, MediaFy detecta URLs copiadas al portapapeles y ofrece descargarlas.</summary>
+    [ObservableProperty] private bool _clipboardWatch;
+    /// <summary>True una vez que el tutorial de bienvenida se completa por primera vez.</summary>
+    [ObservableProperty] private bool _welcomeShown;
 
     /// <summary>Última carpeta del panel destino del organizador (para recordarla entre sesiones).</summary>
     [ObservableProperty] private string _organizerRightPath = string.Empty;
