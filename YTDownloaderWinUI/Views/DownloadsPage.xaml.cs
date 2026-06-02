@@ -144,6 +144,9 @@ public sealed partial class DownloadsPage : Page
 
         _previewCts = new CancellationTokenSource();
         var ct = _previewCts.Token;
+        PreviewLoadingText.Text = Core.YtDlpService.IsPlaylistUrl(url)
+            ? "Analizando lista de reproducción..."
+            : "Analizando enlace...";
         ShowPreviewState(loading: true);
 
         try
@@ -151,6 +154,33 @@ public sealed partial class DownloadsPage : Page
             var info = await _manager.GetInfoAsync(url, ct);
             if (ct.IsCancellationRequested) return;
 
+            if (info.IsPlaylist)
+            {
+                // ── Vista previa de LISTA / ÁLBUM ──
+                PreviewTitle.Text    = info.Title;
+                PreviewUploader.Text = string.IsNullOrEmpty(info.Uploader)
+                    ? Core.PlatformDetector.Name(platform)
+                    : $"{info.Uploader}  ·  {Core.PlatformDetector.Name(platform)}";
+                PreviewDuration.Text = info.PlaylistCount > 0
+                    ? $"{info.PlaylistCount} pistas" : "Lista";
+                if (!string.IsNullOrEmpty(info.Thumbnail))
+                    PreviewThumb.Source = new BitmapImage(new Uri(info.Thumbnail));
+
+                PreviewQualities.ItemsSource = new List<string> { "Lista de reproducción" };
+
+                // Es una lista pura → activamos "Lista completa" para que baje todo
+                TglPlaylist.IsOn = true;
+                PreviewReadyIcon.Glyph = char.ConvertFromUtf32(0xE8FD); // bullet list
+                bool folder = Core.AppSettings.Current.PlaylistSubfolder;
+                PreviewReadyText.Text = folder
+                    ? $"Se descargarán los {info.PlaylistCount} vídeos en una carpeta llamada “{info.Title}”"
+                    : $"Se descargarán los {info.PlaylistCount} vídeos";
+
+                ShowPreviewState(info: true);
+                return;
+            }
+
+            // ── Vista previa de vídeo individual ──
             PreviewTitle.Text    = info.Title;
             PreviewUploader.Text = string.IsNullOrEmpty(info.Uploader)
                 ? Core.PlatformDetector.Name(platform)
@@ -161,6 +191,9 @@ public sealed partial class DownloadsPage : Page
             PreviewQualities.ItemsSource = info.QualityLabels.Count > 0
                 ? info.QualityLabels
                 : new List<string> { "Audio" };
+
+            PreviewReadyIcon.Glyph = char.ConvertFromUtf32(0xE73E); // check
+            PreviewReadyText.Text = "Listo para descargar";
 
             ShowPreviewState(info: true);
         }

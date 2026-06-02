@@ -8,6 +8,7 @@ public class VideoInfo
     public string Uploader { get; set; } = string.Empty;
     public long FileSizeApprox { get; set; }
     public bool IsPlaylist { get; set; }
+    public int PlaylistCount { get; set; }
     public List<string> Entries { get; set; } = new();
 
     /// <summary>Alturas de vídeo disponibles (p. ej. 2160, 1080, 720...), de mayor a menor.</summary>

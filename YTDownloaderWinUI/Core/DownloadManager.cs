@@ -159,6 +159,17 @@ public class DownloadManager
 
                 switch (p.Percent)
                 {
+                    case -3: // nueva pista de una lista: "N|M"
+                        var parts = p.Status.Split('|');
+                        if (parts.Length == 2)
+                        {
+                            item.PlaylistInfo = $"Pista {parts[0]} de {parts[1]}";
+                            item.Progress = 0;            // reinicia la barra para la nueva pista
+                            item.Speed = item.Eta = item.SizeText = string.Empty;
+                            item.Status = DownloadStatus.Downloading;
+                            item.StatusText = "Descargando...";
+                        }
+                        break;
                     case -2: // solo log
                         break;
                     case -1: // cambio de fase (conversión, fusión...)

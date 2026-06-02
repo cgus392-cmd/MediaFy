@@ -49,6 +49,13 @@ public partial class DownloadItem : ObservableObject
     /// <summary>Si true, descarga la lista de reproducción completa (quita --no-playlist).</summary>
     public bool WholePlaylist { get; set; }
 
+    /// <summary>Progreso de pista en descargas de lista: "Pista 3 de 13" (vacío si no aplica).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowPlaylistInfo))]
+    private string _playlistInfo = string.Empty;
+
+    public bool ShowPlaylistInfo => !string.IsNullOrEmpty(PlaylistInfo);
+
     // ── Progreso rico (Fase 2) ──
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowDetails), nameof(DetailLine))]

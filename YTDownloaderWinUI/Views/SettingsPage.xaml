@@ -136,6 +136,24 @@
                     <TextBlock FontSize="12" Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                TextWrapping="Wrap"
                                Text="Estos valores pre-rellenan las páginas de Descargas y Cascada. Puedes cambiarlos por descarga individualmente." />
+
+                    <Rectangle Height="1" Fill="{ThemeResource CardStrokeColorDefaultBrush}" Margin="0,2,0,2" />
+
+                    <!-- Carpeta por álbum/lista -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Crear carpeta por álbum o lista" FontWeight="SemiBold" FontSize="13" />
+                            <TextBlock FontSize="12" TextWrapping="Wrap"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Text="Al descargar una lista completa, agrupa las pistas en una carpeta con el nombre de la lista y las numera (01 -, 02 -…)." />
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" x:Name="TogPlaylistFolder"
+                                      Toggled="TogPlaylistFolder_Toggled" VerticalAlignment="Center" />
+                    </Grid>
                 </StackPanel>
             </Border>
 

@@ -55,6 +55,8 @@ public partial class AppSettings : ObservableObject
     [ObservableProperty] private string _defaultQuality = "Mejor";
     /// <summary>Subtítulos predeterminados (Off, Auto, ES, EN).</summary>
     [ObservableProperty] private string _defaultSubtitles = "Off";
+    /// <summary>Al descargar una lista/álbum completo, crear una carpeta con su nombre y numerar las pistas.</summary>
+    [ObservableProperty] private bool _playlistSubfolder = true;
 
     private static Dictionary<string, bool> DefaultPlatforms() => new()
     {

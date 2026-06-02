@@ -43,8 +43,26 @@ public class YtDlpService
         catch { /* sin red, sin permisos, etc. */ }
     }
 
+    /// <summary>
+    /// True si la URL es una lista de reproducción "pura" (álbum, playlist) y no un
+    /// vídeo individual. En esos casos --no-playlist no aplica y hay que tratarla aparte.
+    /// </summary>
+    public static bool IsPlaylistUrl(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return false;
+        var u = url.ToLowerInvariant();
+        if (u.Contains("/playlist")) return true;            // .../playlist?list=...
+        bool hasList  = u.Contains("list=");
+        bool hasVideo = u.Contains("watch?v=") || u.Contains("youtu.be/") || u.Contains("/shorts/");
+        return hasList && !hasVideo;                          // list= sin vídeo concreto → lista pura
+    }
+
     public async Task<VideoInfo> GetVideoInfoAsync(string url, CancellationToken ct = default)
     {
+        // Listas/álbumes: análisis rápido y plano (no extrae cada vídeo uno por uno)
+        if (IsPlaylistUrl(url))
+            return await GetPlaylistInfoAsync(url, ct);
+
         string json = await RunAsync(_ytDlpPath, $"--dump-json --no-playlist \"{url}\"", ct);
         var obj = JObject.Parse(json);
 
@@ -71,6 +89,44 @@ public class YtDlpService
             }
             info.AvailableHeights = heights.OrderByDescending(h => h).ToList();
         }
+
+        return info;
+    }
+
+    /// <summary>
+    /// Análisis rápido de una lista/álbum: --flat-playlist devuelve solo títulos e ids
+    /// (sin extraer cada vídeo), así que tarda ~2-4s en lugar de ~30s. Un único JSON.
+    /// </summary>
+    private async Task<VideoInfo> GetPlaylistInfoAsync(string url, CancellationToken ct = default)
+    {
+        string json = await RunAsync(_ytDlpPath,
+            $"--dump-single-json --flat-playlist \"{url}\"", ct);
+        var obj = JObject.Parse(json);
+
+        var entries = obj["entries"] as JArray ?? new JArray();
+        var info = new VideoInfo
+        {
+            IsPlaylist    = true,
+            Title         = obj["title"]?.ToString() ?? "Lista de reproducción",
+            Uploader      = obj["uploader"]?.ToString()
+                          ?? obj["channel"]?.ToString()
+                          ?? obj["uploader_id"]?.ToString()
+                          ?? string.Empty,
+            PlaylistCount = obj["playlist_count"]?.ToObject<int>() ?? entries.Count
+        };
+
+        // Miniatura: la de la lista o, si no, la del primer vídeo
+        string thumb = obj["thumbnails"]?.LastOrDefault()?["url"]?.ToString() ?? string.Empty;
+        if (string.IsNullOrEmpty(thumb) && entries.Count > 0)
+        {
+            string firstId = entries[0]?["id"]?.ToString() ?? string.Empty;
+            if (!string.IsNullOrEmpty(firstId))
+                thumb = $"https://i.ytimg.com/vi/{firstId}/mqdefault.jpg";
+        }
+        info.Thumbnail = thumb;
+
+        foreach (var e in entries)
+            info.Entries.Add(e["title"]?.ToString() ?? string.Empty);
 
         return info;
     }
@@ -139,37 +195,142 @@ public class YtDlpService
         IProgress<DownloadProgress> progress,
         CancellationToken ct = default)
     {
-        string formatArg = BuildFormatArg(item.Format, item.Quality);
-        string ext = GetExtension(item.Format);
-        string outputTemplate = Path.Combine(outputFolder, "%(title)s.%(ext)s");
-
-        // Playlist: por defecto solo este vídeo; si el usuario quiere la lista completa, quitamos --no-playlist
-        string playlistFlag = item.WholePlaylist ? string.Empty : "--no-playlist";
-
-        // Subtítulos
-        string subFlags = item.Subtitles switch
+        // Listas/álbumes: se descargan PISTA POR PISTA en procesos frescos.
+        // Esto evita el throttling acumulado de YouTube (que congelaba la sesión
+        // larga tras ~11 pistas) y permite progreso real "Pista N de M" + que una
+        // pista fallida no detenga el resto.
+        if (item.WholePlaylist)
         {
-            "Auto" => "--write-subs --embed-subs --sub-langs \"auto\"",
-            "ES"   => "--write-subs --embed-subs --sub-langs \"es\"",
-            "EN"   => "--write-subs --embed-subs --sub-langs \"en\"",
-            "Todos"=> "--write-subs --embed-subs --sub-langs \"all\"",
-            _      => string.Empty
-        };
+            await DownloadPlaylistAsync(item, outputFolder, progress, ct);
+            return;
+        }
+
+        await DownloadSingleAsync(item, outputFolder, "%(title)s.%(ext)s", item.Url, progress, ct);
+    }
+
+    /// <summary>Descarga un único vídeo/pista con su plantilla de salida relativa a <paramref name="outputFolder"/>.</summary>
+    private async Task DownloadSingleAsync(
+        DownloadItem item, string outputFolder, string fileTemplate, string url,
+        IProgress<DownloadProgress> progress, CancellationToken ct)
+    {
+        string ext = GetExtension(item.Format);
+        string outputTemplate = Path.Combine(outputFolder, fileTemplate);
+
+        string subFlags = SubtitleFlags(item.Subtitles);
+        const string netFlags = "--socket-timeout 30 --retries 10 --fragment-retries 10";
 
         string common =
+            $"{netFlags} " +
             $"--ffmpeg-location \"{_ffmpegPath}\" " +
-            $"--embed-thumbnail --embed-metadata {playlistFlag} {subFlags} --newline " +
+            $"--embed-thumbnail --embed-metadata --no-playlist {subFlags} --newline " +
             $"--progress-template \"{ProgressTemplate}\" " +
-            $"-o \"{outputTemplate}\" \"{item.Url}\"";
+            $"-o \"{outputTemplate}\" \"{url}\"";
 
-        // Para formatos sin pérdida (FLAC/WAV) la calidad de audio no aplica, siempre mejor
         string audioQ = item.Format is "FLAC" or "WAV" ? "0" : AudioQuality(item.Quality);
         string args = item.IsAudio
             ? $"-x --audio-format {ext} --audio-quality {audioQ} --add-metadata {common}"
-            : $"{formatArg} {common}";
+            : $"{BuildFormatArg(item.Format, item.Quality)} {common}";
 
         await RunWithProgressAsync(_ytDlpPath, args, progress, ct);
     }
+
+    /// <summary>
+    /// Descarga una lista/álbum completa pista por pista (cada una en su propio proceso),
+    /// reportando "Pista N de M" y tolerando fallos individuales.
+    /// </summary>
+    private async Task DownloadPlaylistAsync(
+        DownloadItem item, string outputFolder,
+        IProgress<DownloadProgress> progress, CancellationToken ct)
+    {
+        var entries = await GetPlaylistEntriesAsync(item.Url, ct);
+
+        // Si no es realmente una lista (un solo vídeo), cae a descarga única
+        if (entries.Count <= 1)
+        {
+            await DownloadSingleAsync(item, outputFolder, "%(title)s.%(ext)s", item.Url, progress, ct);
+            return;
+        }
+
+        bool albumFolder = AppSettings.Current.PlaylistSubfolder;
+        string albumName = Sanitize(string.IsNullOrWhiteSpace(item.Title) ? "Lista de reproducción" : item.Title);
+        string targetDir = albumFolder ? Path.Combine(outputFolder, albumName) : outputFolder;
+        Directory.CreateDirectory(targetDir);
+
+        int total = entries.Count;
+        int ok = 0;
+        var failed = new List<int>();
+
+        for (int i = 0; i < total; i++)
+        {
+            ct.ThrowIfCancellationRequested();
+            int trackNo = i + 1;
+
+            // Marca de pista: el manager pone "Pista N de M" y reinicia la barra
+            progress.Report(new DownloadProgress(-3, $"{trackNo}|{total}"));
+
+            // Numeración solo si agrupamos en carpeta de álbum
+            string prefix = albumFolder ? $"{trackNo:D2} - " : string.Empty;
+            string fileTemplate = $"{prefix}%(title)s.%(ext)s";
+
+            try
+            {
+                await DownloadSingleAsync(item, targetDir, fileTemplate, entries[i].Url, progress, ct);
+                ok++;
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                failed.Add(trackNo);
+                progress.Report(new DownloadProgress(-2, string.Empty,
+                    LogLine: $"[MediaFy] Pista {trackNo} falló y se omitió: {ex.Message.Trim()}"));
+            }
+
+            // Pausa breve entre pistas: gentil con YouTube, evita rate-limit por IP
+            try { await Task.Delay(500, ct); } catch (OperationCanceledException) { throw; }
+        }
+
+        if (ok == 0)
+            throw new Exception("No se pudo descargar ninguna pista de la lista.");
+
+        if (failed.Count > 0)
+            progress.Report(new DownloadProgress(-2, string.Empty,
+                LogLine: $"[MediaFy] {ok}/{total} pistas completadas · fallaron: {string.Join(", ", failed)}"));
+    }
+
+    /// <summary>Lista plana (url + título) de las pistas de una lista/álbum. Rápido (--flat-playlist).</summary>
+    private async Task<List<(string Url, string Title)>> GetPlaylistEntriesAsync(
+        string url, CancellationToken ct = default)
+    {
+        var list = new List<(string, string)>();
+        try
+        {
+            string json = await RunAsync(_ytDlpPath, $"--dump-single-json --flat-playlist \"{url}\"", ct);
+            var obj = JObject.Parse(json);
+            if (obj["entries"] is not JArray entries) return list;
+
+            foreach (var e in entries)
+            {
+                string id = e["id"]?.ToString() ?? string.Empty;
+                string eUrl = e["url"]?.ToString() ?? string.Empty;
+                if (string.IsNullOrEmpty(eUrl) || !eUrl.StartsWith("http"))
+                    eUrl = string.IsNullOrEmpty(id) ? string.Empty : $"https://www.youtube.com/watch?v={id}";
+                if (string.IsNullOrEmpty(eUrl)) continue;
+                list.Add((eUrl, e["title"]?.ToString() ?? string.Empty));
+            }
+        }
+        catch (OperationCanceledException) { throw; }
+        catch { /* devolvemos lo que haya */ }
+        return list;
+    }
+
+    private static string SubtitleFlags(string subtitles) => subtitles switch
+    {
+        "Auto"  => "--write-subs --embed-subs --sub-langs \"auto\"",
+        "ES"    => "--write-subs --embed-subs --sub-langs \"es\"",
+        "EN"    => "--write-subs --embed-subs --sub-langs \"en\"",
+        "Todos" => "--write-subs --embed-subs --sub-langs \"all\"",
+        _       => string.Empty
+    };
 
     private static readonly HttpClient Http = new();
 
@@ -401,6 +562,14 @@ public class YtDlpService
                     : down;
                 progress.Report(new DownloadProgress(pct, $"Descargando {pct:F0}%", speed, eta, sizeText, line));
             }
+            return;
+        }
+
+        // Descarga de lista: "[download] Downloading item 3 of 13" (o "video 3 of 13")
+        var pl = Regex.Match(line, @"Downloading (?:item|video) (\d+) of (\d+)");
+        if (pl.Success)
+        {
+            progress.Report(new DownloadProgress(-3, $"{pl.Groups[1].Value}|{pl.Groups[2].Value}", LogLine: line));
             return;
         }
 

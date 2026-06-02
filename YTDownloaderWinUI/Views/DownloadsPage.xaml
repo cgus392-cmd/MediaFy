@@ -146,7 +146,7 @@
                 <StackPanel x:Name="PreviewLoading" Orientation="Horizontal" Spacing="12"
                             VerticalAlignment="Center" Visibility="Collapsed">
                     <ProgressRing IsActive="True" Width="22" Height="22" />
-                    <TextBlock Text="Analizando enlace..." VerticalAlignment="Center"
+                    <TextBlock x:Name="PreviewLoadingText" Text="Analizando enlace..." VerticalAlignment="Center"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 </StackPanel>
 
@@ -189,9 +189,9 @@
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Spacing="5">
-                                <FontIcon Glyph="&#xE73E;" FontSize="12"
+                                <FontIcon x:Name="PreviewReadyIcon" Glyph="&#xE73E;" FontSize="12"
                                           Foreground="{ThemeResource SystemFillColorSuccessBrush}" />
-                                <TextBlock Text="Listo para descargar" FontSize="12"
+                                <TextBlock x:Name="PreviewReadyText" Text="Listo para descargar" FontSize="12"
                                            Foreground="{ThemeResource SystemFillColorSuccessBrush}" />
                             </StackPanel>
                         </StackPanel>
@@ -386,6 +386,14 @@
                                             <Run Text=" · " />
                                             <Run Text="{x:Bind Duration, Mode=OneWay}" />
                                         </TextBlock>
+                                        <!-- Pista N de M (descargas de lista/álbum) -->
+                                        <StackPanel Orientation="Horizontal" Spacing="5" Margin="0,5,0,0"
+                                                    Visibility="{x:Bind ShowPlaylistInfo, Mode=OneWay, Converter={StaticResource BoolVis}}">
+                                            <FontIcon Glyph="&#xE8FD;" FontSize="11"
+                                                      Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                                            <TextBlock Text="{x:Bind PlaylistInfo, Mode=OneWay}" FontSize="11"
+                                                       Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                                        </StackPanel>
                                         <ProgressBar Margin="0,8,0,0"
                                                      Value="{x:Bind Progress, Mode=OneWay}"
                                                      Minimum="0" Maximum="100"

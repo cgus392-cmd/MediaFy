@@ -35,6 +35,7 @@ public sealed partial class SettingsPage : Page
         SelectByContent(CboDlFormat,    Core.AppSettings.Current.DefaultFormat);
         SelectByContent(CboDlQuality,   Core.AppSettings.Current.DefaultQuality);
         SelectByContent(CboDlSubtitles, Core.AppSettings.Current.DefaultSubtitles);
+        TogPlaylistFolder.IsOn = Core.AppSettings.Current.PlaylistSubfolder;
 
         TogProtocol.IsOn = Core.UrlProtocol.IsRegistered();
         TogStartup.IsOn  = Core.StartupManager.IsEnabled();
@@ -138,6 +139,11 @@ public sealed partial class SettingsPage : Page
     {
         if (CboDlSubtitles?.SelectedItem is ComboBoxItem item)
             Core.AppSettings.Current.DefaultSubtitles = item.Content?.ToString() ?? "Off";
+    }
+
+    private void TogPlaylistFolder_Toggled(object sender, RoutedEventArgs e)
+    {
+        Core.AppSettings.Current.PlaylistSubfolder = TogPlaylistFolder.IsOn;
     }
 
     private static void SelectByContent(ComboBox combo, string content)
