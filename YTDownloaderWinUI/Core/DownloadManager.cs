@@ -42,6 +42,11 @@ public class DownloadManager
     /// <summary>Ejecuta yt-dlp -U en background (auto-actualización).</summary>
     public Task UpdateYtDlpAsync() => _ytDlp.SelfUpdateAsync();
 
+    /// <summary>Busca en YouTube usando ytsearch de yt-dlp (sin API, gratis).</summary>
+    public Task<List<Models.SearchResultItem>> SearchAsync(
+        string query, int count = 8, CancellationToken ct = default)
+        => _ytDlp.SearchAsync(query, count, ct);
+
     // ── Spotify ────────────────────────────────────────────────
     public bool SpotifyReady => true; // ya no requiere credenciales
 

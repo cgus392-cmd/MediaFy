@@ -13,26 +13,31 @@ public sealed partial class DownloadsPage : Page
 {
     private readonly Core.DownloadManager _manager = App.DownloadManager;
 
-    // Vista previa con debounce
-    private readonly DispatcherTimer _previewTimer = new() { Interval = TimeSpan.FromMilliseconds(600) };
+    // Debounce compartido para preview y búsqueda
+    private readonly DispatcherTimer _inputTimer = new() { Interval = TimeSpan.FromMilliseconds(650) };
     private CancellationTokenSource? _previewCts;
+    private CancellationTokenSource? _searchCts;
     private string _lastPreviewedUrl = string.Empty;
+    private string _lastSearchQuery  = string.Empty;
+    private bool   _searchMode;
 
     public DownloadsPage()
     {
         InitializeComponent();
+        NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Required;
+
         DownloadsList.ItemsSource = _manager.Queue;
         _manager.Queue.CollectionChanged += (_, _) => RefreshListState();
         RefreshListState();
 
-        _previewTimer.Tick += async (_, _) => { _previewTimer.Stop(); await UpdatePreviewAsync(); };
-        TxtUrl.TextChanged += (_, _) => { _previewTimer.Stop(); _previewTimer.Start(); };
+        _inputTimer.Tick += async (_, _) => { _inputTimer.Stop(); await OnInputSettledAsync(); };
 
         if (!_manager.IsReady)
             TxtStatus.Text = "⚠  Faltan yt-dlp.exe o ffmpeg.exe en Assets/";
     }
 
-    // ── Vista previa (Fase 3) ──────────────────────────────────
+    // ── Entrada del usuario ────────────────────────────────────
+
     /// <summary>Recibe una URL de fuera (CLI, protocolo, extensión) y la prepara para descargar.</summary>
     public void PrefillUrl(string url)
     {
@@ -40,29 +45,62 @@ public sealed partial class DownloadsPage : Page
         TxtUrl.Focus(FocusState.Programmatic);
     }
 
-    private async Task UpdatePreviewAsync()
+    private void TxtUrl_TextChanged(object sender, TextChangedEventArgs e)
     {
-        string url = TxtUrl.Text.Trim();
+        string text = TxtUrl.Text.Trim();
 
-        // Cancela cualquier análisis previo en curso
-        _previewCts?.Cancel();
+        // Botón de limpiar
+        BtnClearUrl.Visibility = string.IsNullOrEmpty(text)
+            ? Visibility.Collapsed : Visibility.Visible;
 
-        if (string.IsNullOrWhiteSpace(url))
+        // Icono dinámico: enlace vs búsqueda
+        bool looksLikeUrl = Core.PlatformDetector.LooksLikeUrl(text);
+        UrlIcon.Glyph = looksLikeUrl
+            ? char.ConvertFromUtf32(0xE71B)  // Link
+            : char.ConvertFromUtf32(0xE721); // Search
+
+        // Si vacío, colapsar todo y resetear
+        if (string.IsNullOrWhiteSpace(text))
         {
-            PreviewCard.Visibility = Visibility.Collapsed;
+            _inputTimer.Stop();
+            HideAllPanels();
             _lastPreviewedUrl = string.Empty;
+            _lastSearchQuery  = string.Empty;
             return;
         }
 
-        if (!Core.PlatformDetector.LooksLikeUrl(url))
+        // Reiniciar debounce
+        _inputTimer.Stop();
+        _inputTimer.Start();
+    }
+
+    private async Task OnInputSettledAsync()
+    {
+        string text = TxtUrl.Text.Trim();
+        if (string.IsNullOrWhiteSpace(text)) return;
+
+        if (Core.PlatformDetector.LooksLikeUrl(text))
         {
-            ShowPreviewState(error: "Pega un enlace válido (https://...)");
-            return;
+            // Modo URL: vista previa normal
+            HideSearchPanel();
+            await UpdatePreviewAsync(text);
         }
+        else if (text.Length >= 3)
+        {
+            // Modo búsqueda: texto libre → buscar en YouTube
+            HidePreviewCard();
+            await UpdateSearchAsync(text);
+        }
+    }
+
+    // ── Vista previa de URL ────────────────────────────────────
+
+    private async Task UpdatePreviewAsync(string url)
+    {
+        _previewCts?.Cancel();
 
         var platform = Core.PlatformDetector.Detect(url);
 
-        // Spotify: descarga por coincidencia con YouTube (no análisis directo)
         if (platform == Core.Platform.Spotify)
         {
             if (!Core.AppSettings.Current.IsPlatformEnabled(Core.Platform.Spotify))
@@ -80,7 +118,7 @@ public sealed partial class DownloadsPage : Page
             return;
         }
 
-        if (url == _lastPreviewedUrl) return; // ya analizado
+        if (url == _lastPreviewedUrl) return;
         _lastPreviewedUrl = url;
 
         _previewCts = new CancellationTokenSource();
@@ -92,7 +130,7 @@ public sealed partial class DownloadsPage : Page
             var info = await _manager.GetInfoAsync(url, ct);
             if (ct.IsCancellationRequested) return;
 
-            PreviewTitle.Text = info.Title;
+            PreviewTitle.Text    = info.Title;
             PreviewUploader.Text = string.IsNullOrEmpty(info.Uploader)
                 ? Core.PlatformDetector.Name(platform)
                 : $"{info.Uploader}  ·  {Core.PlatformDetector.Name(platform)}";
@@ -105,7 +143,7 @@ public sealed partial class DownloadsPage : Page
 
             ShowPreviewState(info: true);
         }
-        catch (OperationCanceledException) { /* reemplazado por otro análisis */ }
+        catch (OperationCanceledException) { }
         catch
         {
             if (!ct.IsCancellationRequested)
@@ -117,10 +155,99 @@ public sealed partial class DownloadsPage : Page
     {
         PreviewCard.Visibility    = Visibility.Visible;
         PreviewLoading.Visibility = loading ? Visibility.Visible : Visibility.Collapsed;
-        PreviewInfo.Visibility    = info ? Visibility.Visible : Visibility.Collapsed;
+        PreviewInfo.Visibility    = info    ? Visibility.Visible : Visibility.Collapsed;
         PreviewError.Visibility   = error != null ? Visibility.Visible : Visibility.Collapsed;
         if (error != null) PreviewErrorText.Text = error;
     }
+
+    // ── Búsqueda en YouTube ───────────────────────────────────
+
+    private async Task UpdateSearchAsync(string query)
+    {
+        _searchCts?.Cancel();
+
+        if (query == _lastSearchQuery) return;
+        _lastSearchQuery = query;
+
+        _searchCts = new CancellationTokenSource();
+        var ct = _searchCts.Token;
+
+        // Mostrar panel con spinner
+        SearchPanel.Visibility      = Visibility.Visible;
+        SearchLoading.Visibility    = Visibility.Visible;
+        SearchLoading.IsActive      = true;
+        SearchEmptyText.Visibility  = Visibility.Collapsed;
+        SearchResultsList.ItemsSource = null;
+
+        try
+        {
+            var results = await _manager.SearchAsync(query, 8, ct);
+            if (ct.IsCancellationRequested) return;
+
+            SearchLoading.IsActive   = false;
+            SearchLoading.Visibility = Visibility.Collapsed;
+
+            if (results.Count == 0)
+            {
+                SearchEmptyText.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                SearchResultsList.ItemsSource = results;
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch
+        {
+            if (!ct.IsCancellationRequested)
+            {
+                SearchLoading.IsActive   = false;
+                SearchLoading.Visibility = Visibility.Collapsed;
+                SearchEmptyText.Visibility = Visibility.Visible;
+                SearchEmptyText.Text = "Error al buscar";
+            }
+        }
+    }
+
+    private void SearchResult_Click(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is not SearchResultItem item) return;
+
+        // Rellena el campo con la URL del resultado
+        TxtUrl.Text = item.Url;
+        TxtUrl.SelectionStart = item.Url.Length;
+
+        // Cierra el panel de búsqueda
+        HideSearchPanel();
+        _lastSearchQuery = string.Empty;
+
+        // Dispara la vista previa automáticamente
+        _inputTimer.Stop();
+        _inputTimer.Start();
+    }
+
+    // ── Helpers de visibilidad ─────────────────────────────────
+
+    private void HideAllPanels()
+    {
+        PreviewCard.Visibility = Visibility.Collapsed;
+        SearchPanel.Visibility = Visibility.Collapsed;
+    }
+
+    private void HideSearchPanel()
+    {
+        SearchPanel.Visibility = Visibility.Collapsed;
+        _searchCts?.Cancel();
+    }
+
+    private void HidePreviewCard()
+    {
+        PreviewCard.Visibility = Visibility.Collapsed;
+        _previewCts?.Cancel();
+        _lastPreviewedUrl = string.Empty;
+    }
+
+    // ── Lista de descargas ─────────────────────────────────────
 
     private void RefreshListState()
     {
@@ -130,6 +257,8 @@ public sealed partial class DownloadsPage : Page
         DownloadsList.Visibility = count >  0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    // ── Descargar ──────────────────────────────────────────────
+
     private async void BtnDownload_Click(object sender, RoutedEventArgs e)
     {
         string url = TxtUrl.Text.Trim();
@@ -137,7 +266,7 @@ public sealed partial class DownloadsPage : Page
 
         if (!Core.PlatformDetector.LooksLikeUrl(url))
         {
-            TxtStatus.Text = "Pega un enlace válido (https://...)";
+            TxtStatus.Text = "Pega un enlace válido (https://...) o selecciona un resultado de búsqueda";
             return;
         }
 
@@ -151,7 +280,7 @@ public sealed partial class DownloadsPage : Page
             { TxtStatus.Text = "Configura tus credenciales de Spotify en Configuración"; return; }
 
             TxtUrl.Text = string.Empty;
-            PreviewCard.Visibility = Visibility.Collapsed;
+            HideAllPanels();
             TxtStatus.Text = "Resolviendo Spotify...";
             try
             {
@@ -172,12 +301,15 @@ public sealed partial class DownloadsPage : Page
         string format  = (string)((ComboBoxItem)CboFormat.SelectedItem).Content;
         string quality = (string)((ComboBoxItem)CboQuality.SelectedItem).Content;
 
-        // No bloquea: arranca en segundo plano y permite varias en paralelo
         _manager.AddAndStart(url, format, quality);
 
         TxtUrl.Text = string.Empty;
+        HideAllPanels();
+        _lastPreviewedUrl = string.Empty;
         TxtStatus.Text = "Añadida a la cola";
     }
+
+    // ── Controles de barra ─────────────────────────────────────
 
     private async void BtnPaste_Click(object sender, RoutedEventArgs e)
     {
@@ -186,11 +318,28 @@ public sealed partial class DownloadsPage : Page
             TxtUrl.Text = (await dp.GetTextAsync()).Trim();
     }
 
+    private void BtnClearUrl_Click(object sender, RoutedEventArgs e)
+    {
+        TxtUrl.Text = string.Empty;
+        TxtUrl.Focus(FocusState.Programmatic);
+    }
+
     private void TxtUrl_KeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (e.Key == VirtualKey.Enter)
-            BtnDownload_Click(sender, new RoutedEventArgs());
+        {
+            string text = TxtUrl.Text.Trim();
+            if (Core.PlatformDetector.LooksLikeUrl(text))
+                BtnDownload_Click(sender, new RoutedEventArgs());
+            // Si es búsqueda y Enter, simplemente deja que el debounce actúe
+        }
+        else if (e.Key == VirtualKey.Escape)
+        {
+            HideAllPanels();
+        }
     }
+
+    // ── Acciones de items ──────────────────────────────────────
 
     private void BtnCancel_Click(object sender, RoutedEventArgs e)
     {

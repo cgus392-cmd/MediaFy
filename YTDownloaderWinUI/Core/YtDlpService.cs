@@ -75,6 +75,64 @@ public class YtDlpService
         return info;
     }
 
+    /// <summary>
+    /// Busca en YouTube usando ytsearch de yt-dlp.
+    /// Sin API key, sin costo, usa el yt-dlp ya bundled.
+    /// </summary>
+    public async Task<List<Models.SearchResultItem>> SearchAsync(
+        string query, int count = 8, CancellationToken ct = default)
+    {
+        // --flat-playlist: no descarga info completa de cada video → ~2-4s en lugar de ~20s
+        string args = $"--dump-json --flat-playlist \"ytsearch{count}:{query}\"";
+        string output;
+        try { output = await RunAsync(_ytDlpPath, args, ct); }
+        catch { return new(); }
+
+        var results = new List<Models.SearchResultItem>();
+        foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        {
+            try
+            {
+                var obj = JObject.Parse(line.Trim());
+                string id = obj["id"]?.ToString() ?? string.Empty;
+                if (string.IsNullOrEmpty(id)) continue;
+
+                string url = obj["url"]?.ToString()
+                           ?? obj["webpage_url"]?.ToString()
+                           ?? string.Empty;
+                if (string.IsNullOrEmpty(url) || !url.StartsWith("http"))
+                    url = $"https://www.youtube.com/watch?v={id}";
+
+                // Thumbnail: usar la del JSON o construirla desde el id
+                string thumb = obj["thumbnail"]?.ToString() ?? string.Empty;
+                if (string.IsNullOrEmpty(thumb) && !string.IsNullOrEmpty(id))
+                    thumb = $"https://i.ytimg.com/vi/{id}/mqdefault.jpg";
+
+                results.Add(new Models.SearchResultItem
+                {
+                    Url      = url,
+                    Title    = obj["title"]?.ToString() ?? "Sin título",
+                    Uploader = obj["uploader"]?.ToString()
+                             ?? obj["channel"]?.ToString()
+                             ?? string.Empty,
+                    Duration = FormatDuration(obj["duration"]?.ToObject<int>() ?? 0),
+                    Thumbnail = thumb,
+                    Views    = FormatViews(obj["view_count"]?.ToObject<long>() ?? 0)
+                });
+            }
+            catch { /* línea malformada, ignorar */ }
+        }
+        return results;
+    }
+
+    private static string FormatViews(long v)
+    {
+        if (v >= 1_000_000_000) return $"{v / 1_000_000_000.0:F1}B vistas";
+        if (v >= 1_000_000)     return $"{v / 1_000_000.0:F1}M vistas";
+        if (v >= 1_000)         return $"{v / 1_000.0:F0}K vistas";
+        return v > 0 ? $"{v} vistas" : string.Empty;
+    }
+
     public async Task DownloadAsync(
         DownloadItem item,
         string outputFolder,
