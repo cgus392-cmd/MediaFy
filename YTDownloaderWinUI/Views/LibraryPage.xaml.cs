@@ -182,6 +182,10 @@ public sealed partial class LibraryPage : Page
         StartCoverExtraction();
     }
 
+    /// <summary>Caché de portadas (ruta → portada extraída) durante la sesión: evita
+    /// volver a lanzar ffmpeg por cada archivo cada vez que se abre la Biblioteca.</summary>
+    private static readonly Dictionary<string, string> _coverCache = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Extrae portadas en segundo plano (si está activado) y las asigna a cada ítem.</summary>
     private void StartCoverExtraction()
     {
@@ -198,9 +202,20 @@ public sealed partial class LibraryPage : Page
             {
                 if (ct.IsCancellationRequested) return;
                 if (!string.IsNullOrEmpty(f.CoverPath)) continue;
+
+                // ¿Ya la extrajimos antes en esta sesión?
+                if (_coverCache.TryGetValue(f.FullPath, out var cached))
+                {
+                    if (File.Exists(cached)) { DispatcherQueue.TryEnqueue(() => f.CoverPath = cached); continue; }
+                    _coverCache.Remove(f.FullPath);
+                }
+
                 string? cover = await _ffmpeg.ExtractCoverAsync(f.FullPath, ct);
                 if (cover != null && !ct.IsCancellationRequested)
+                {
+                    _coverCache[f.FullPath] = cover;
                     DispatcherQueue.TryEnqueue(() => f.CoverPath = cover);
+                }
             }
         }, ct);
     }

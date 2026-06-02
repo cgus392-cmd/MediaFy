@@ -59,7 +59,13 @@ public sealed partial class ResourcePage : Page
             }
             _prevIdle = idle; _prevKernel = kernel; _prevUser = user; _cpuPrimed = true;
         }
-        try { CpuProcs.Text = Process.GetProcesses().Length.ToString(); } catch { }
+        // Process.GetProcesses() enumera TODO el sistema (~100-200ms): fuera del hilo de UI
+        _ = Task.Run(() =>
+        {
+            int n;
+            try { n = Process.GetProcesses().Length; } catch { return; }
+            DispatcherQueue.TryEnqueue(() => CpuProcs.Text = n.ToString());
+        });
 
         // ── Memoria ──
         var m = new MEMORYSTATUSEX();

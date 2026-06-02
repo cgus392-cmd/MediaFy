@@ -295,21 +295,40 @@ public sealed partial class SettingsPage : Page
             Core.AppSettings.Current.CutSaveMode = m;
     }
 
+    // Caché de la versión de yt-dlp durante toda la vida de la app: leerla arranca
+    // yt-dlp.exe (PyInstaller, se auto-extrae en frío ~1-3s), así que NUNCA debe
+    // tocar el hilo de UI ni repetirse.
+    private static string? _cachedYtDlpVersion;
+
     private async Task LoadYtDlpVersionAsync()
     {
-        try
+        if (_cachedYtDlpVersion != null) { TxtYtDlpVersion.Text = _cachedYtDlpVersion; return; }
+        TxtYtDlpVersion.Text = "Comprobando…";
+
+        string result = await Task.Run(() =>
         {
-            string path = Path.Combine(AppContext.BaseDirectory, "Assets", "yt-dlp.exe");
-            if (!File.Exists(path)) { TxtYtDlpVersion.Text = "No encontrado en Assets/"; return; }
-            using var proc = Process.Start(new ProcessStartInfo
+            try
             {
-                FileName = path, Arguments = "--version",
-                RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true
-            })!;
-            TxtYtDlpVersion.Text = $"Versión instalada: {(await proc.StandardOutput.ReadToEndAsync()).Trim()}";
-        }
-        catch { TxtYtDlpVersion.Text = "Error al leer la versión"; }
+                string path = Path.Combine(AppContext.BaseDirectory, "Assets", "yt-dlp.exe");
+                if (!File.Exists(path)) return "No encontrado en Assets/";
+                using var proc = Process.Start(new ProcessStartInfo
+                {
+                    FileName = path, Arguments = "--version",
+                    RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true
+                })!;
+                string v = proc.StandardOutput.ReadToEnd().Trim();
+                proc.WaitForExit();
+                return $"Versión instalada: {v}";
+            }
+            catch { return "Error al leer la versión"; }
+        });
+
+        _cachedYtDlpVersion = result;
+        TxtYtDlpVersion.Text = result;
     }
+
+    /// <summary>Invalida la caché de versión tras actualizar yt-dlp.</summary>
+    private static void ClearYtDlpVersionCache() => _cachedYtDlpVersion = null;
 
     private async void OnBrowse(object sender, RoutedEventArgs e)
     {
@@ -333,12 +352,16 @@ public sealed partial class SettingsPage : Page
         TxtYtDlpVersion.Text = "Actualizando...";
         try
         {
-            using var proc = Process.Start(new ProcessStartInfo
+            await Task.Run(() =>
             {
-                FileName = path, Arguments = "-U",
-                RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true
-            })!;
-            await proc.WaitForExitAsync();
+                using var proc = Process.Start(new ProcessStartInfo
+                {
+                    FileName = path, Arguments = "-U",
+                    RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true
+                })!;
+                proc.WaitForExit();
+            });
+            ClearYtDlpVersionCache();
             await LoadYtDlpVersionAsync();
         }
         catch { TxtYtDlpVersion.Text = "Error al actualizar"; }

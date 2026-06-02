@@ -64,7 +64,7 @@ public sealed partial class MainWindow : Window
         App.Playback.Changed += OnPlaybackChanged;
 
         _vuTimer.Tick += VuTimer_Tick;
-        _vuTimer.Start();
+        // El VU solo se ejecuta mientras haya reproducción (se arranca en OnPlaybackChanged)
     }
 
     /// <summary>Aplica el telón de fondo a toda la ventana en vivo.</summary>
@@ -310,6 +310,7 @@ public sealed partial class MainWindow : Window
         GpMiniName.Text = App.Playback.CurrentTitle;
         UpdatePlayIcon();
         UpdatePlayersVisibility();
+        if (App.Playback.HasMedia && !_vuTimer.IsEnabled) _vuTimer.Start();
     });
 
     private void UpdatePlayIcon()
@@ -372,6 +373,8 @@ public sealed partial class MainWindow : Window
         SetBar(GpVuRight, _vuR);
         SetBar(GpVuLeftBig, _vuL);
         SetBar(GpVuRightBig, _vuR);
+        // Detener el VU cuando ya no hay audio y las barras decayeron (ahorra CPU en reposo)
+        if (!App.Playback.HasMedia && _vuL < 0.01 && _vuR < 0.01) _vuTimer.Stop();
     }
 
     private static void SetBar(FrameworkElement bar, double level)
