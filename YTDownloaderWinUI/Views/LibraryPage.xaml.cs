@@ -12,7 +12,8 @@ namespace YTDownloader.Views;
 
 public sealed partial class LibraryPage : Page
 {
-    public ObservableCollection<LibraryFile> Files { get; } = new();
+    /// <summary>Entradas mezcladas: álbumes (carpetas) primero, luego archivos sueltos.</summary>
+    public ObservableCollection<object> Entries { get; } = new();
 
     private readonly Core.FfmpegService _ffmpeg = new();
     private CancellationTokenSource? _coverCts;
@@ -20,9 +21,19 @@ public sealed partial class LibraryPage : Page
     public LibraryPage()
     {
         InitializeComponent();
-        FilesList.ItemsSource = Files;
+        FilesList.ItemsSource = Entries;
         Loaded += (_, _) => LoadFiles();
         Core.AppSettings.Current.PropertyChanged += OnSettingsChanged;
+    }
+
+    /// <summary>Todas las pistas/archivos (sueltos + dentro de álbumes), para portadas y búsquedas.</summary>
+    private IEnumerable<LibraryFile> AllFiles()
+    {
+        foreach (var e in Entries)
+        {
+            if (e is LibraryFile f) yield return f;
+            else if (e is LibraryAlbum a) foreach (var t in a.Tracks) yield return t;
+        }
     }
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
@@ -37,32 +48,52 @@ public sealed partial class LibraryPage : Page
         if (e.PropertyName != nameof(Core.AppSettings.LibraryShowCovers)) return;
         DispatcherQueue.TryEnqueue(() =>
         {
-            foreach (var f in Files) f.RefreshCoverVisibility();
+            foreach (var f in AllFiles()) f.RefreshCoverVisibility();
             StartCoverExtraction();
         });
     }
 
     private void LoadFiles()
     {
-        Files.Clear();
+        Entries.Clear();
         string folder = Core.AppSettings.Current.OutputFolder;
         try
         {
             if (Directory.Exists(folder))
             {
-                var found = new DirectoryInfo(folder)
+                var root = new DirectoryInfo(folder);
+
+                // 1) Álbumes = subcarpetas que contienen medios (ordenadas por nombre)
+                foreach (var sub in root.EnumerateDirectories().OrderBy(d => d.Name))
+                {
+                    var tracks = sub
+                        .EnumerateFiles("*", SearchOption.TopDirectoryOnly)
+                        .Where(f => LibraryFile.MediaExtensions.Contains(f.Extension.ToLowerInvariant()))
+                        .OrderBy(f => f.Name)
+                        .Select(LibraryFile.From)
+                        .ToList();
+                    if (tracks.Count == 0) continue;
+
+                    var album = new LibraryAlbum { Name = sub.Name, FolderPath = sub.FullName };
+                    foreach (var t in tracks) album.Tracks.Add(t);
+                    Entries.Add(album);
+                }
+
+                // 2) Archivos sueltos en la raíz (más recientes primero)
+                var loose = root
                     .EnumerateFiles("*", SearchOption.TopDirectoryOnly)
                     .Where(f => LibraryFile.MediaExtensions.Contains(f.Extension.ToLowerInvariant()))
                     .OrderByDescending(f => f.LastWriteTime)
                     .Select(LibraryFile.From);
-                foreach (var f in found) Files.Add(f);
+                foreach (var f in loose) Entries.Add(f);
             }
         }
         catch { }
 
-        TxtCount.Text = Files.Count.ToString();
-        EmptyState.Visibility = Files.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        FilesList.Visibility  = Files.Count > 0  ? Visibility.Visible : Visibility.Collapsed;
+        int total = AllFiles().Count();
+        TxtCount.Text = total.ToString();
+        EmptyState.Visibility = Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        FilesList.Visibility  = Entries.Count > 0  ? Visibility.Visible : Visibility.Collapsed;
 
         StartCoverExtraction();
     }
@@ -75,7 +106,7 @@ public sealed partial class LibraryPage : Page
 
         _coverCts = new CancellationTokenSource();
         var ct = _coverCts.Token;
-        var snapshot = Files.ToList();
+        var snapshot = AllFiles().ToList();
 
         _ = Task.Run(async () =>
         {
@@ -115,7 +146,7 @@ public sealed partial class LibraryPage : Page
         if (mode == Core.PlayerMode.Integrated)
         {
             // Pasa portada del archivo (si ya estaba cacheada) para SMTC
-            var lf = Files.FirstOrDefault(f => f.FullPath == path);
+            var lf = AllFiles().FirstOrDefault(f => f.FullPath == path);
             await App.Playback.PlayAsync(path, Path.GetFileNameWithoutExtension(path), null, lf?.CoverPath);
         }
         else
@@ -170,6 +201,12 @@ public sealed partial class LibraryPage : Page
     {
         if ((sender as FrameworkElement)?.Tag is string path && File.Exists(path))
             Process.Start("explorer.exe", $"/select,\"{path}\"");
+    }
+
+    private void BtnRevealFolder_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is string folder && Directory.Exists(folder))
+            Process.Start("explorer.exe", $"\"{folder}\"");
     }
 
     private async void BtnDelete_Click(object sender, RoutedEventArgs e)

@@ -46,6 +46,7 @@
     <Content Include="Assets\logo.png" />
     <Content Include="Assets\brand\cglabs_black.png" />
     <Content Include="Assets\brand\cglabs_white.png" />
+    <Content Include="Assets\brand\folder_album.png" />
     <!-- Capturas usadas por el tutorial de bienvenida -->
     <None Include="..\docs\screenshots\*.png">
       <Link>Assets\tutorial\%(Filename)%(Extension)</Link>
