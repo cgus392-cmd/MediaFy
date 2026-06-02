@@ -116,6 +116,7 @@
         <!-- Cabecera -->
         <Grid Grid.Row="0" Margin="0,0,0,16">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
@@ -131,7 +132,68 @@
                 <TextBlock Text="Tus archivos descargados" FontSize="13" Margin="0,4,0,0"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
             </StackPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+
+            <!-- Widget de unidad / disco -->
+            <Border Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Left"
+                    Margin="24,0,24,0" MaxWidth="340"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="10,6">
+                <Grid ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon x:Name="DriveIcon" Glyph="&#xE8B7;" FontSize="16" VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3" MinWidth="150">
+                        <TextBlock x:Name="DriveName" Text="Descargas de MediaFy" FontSize="12" FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis" MaxLines="1" />
+                        <ProgressBar x:Name="DriveBar" Minimum="0" Maximum="1" Value="0" Height="4" />
+                        <TextBlock x:Name="DriveSpace" Text="" FontSize="10"
+                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                   TextTrimming="CharacterEllipsis" MaxLines="1" />
+                    </StackPanel>
+                    <Button x:Name="DriveEject" Grid.Column="2" Click="DriveEject_Click"
+                            Background="Transparent" BorderThickness="0" Width="32" Height="32" Padding="0"
+                            VerticalAlignment="Center" Visibility="Collapsed"
+                            ToolTipService.ToolTip="Expulsar con seguridad">
+                        <FontIcon Glyph="&#xE898;" FontSize="14" />
+                    </Button>
+                    <DropDownButton Grid.Column="3" Padding="6,4" VerticalAlignment="Center"
+                                    ToolTipService.ToolTip="Cambiar unidad">
+                        <FontIcon Glyph="&#xEDA2;" FontSize="14" />
+                        <DropDownButton.Flyout>
+                            <Flyout x:Name="DriveFlyout" Opening="DriveFlyout_Opening">
+                                <ListView x:Name="DriveList" SelectionMode="None" IsItemClickEnabled="True"
+                                          ItemClick="DriveList_ItemClick" MaxHeight="320" MinWidth="260">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate x:DataType="models:StorageDrive">
+                                            <Grid ColumnSpacing="10" Padding="2,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <FontIcon Glyph="{x:Bind Icon}" FontSize="18" VerticalAlignment="Center" />
+                                                <StackPanel Grid.Column="1">
+                                                    <TextBlock Text="{x:Bind DisplayName}" FontSize="13" FontWeight="SemiBold"
+                                                               TextTrimming="CharacterEllipsis" MaxLines="1" />
+                                                    <TextBlock FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}">
+                                                        <Run Text="{x:Bind TypeLabel}" /><Run Text="  ·  " /><Run Text="{x:Bind SpaceText}" />
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </Flyout>
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+                </Grid>
+            </Border>
+
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                 <Button Click="BtnOpenFolder_Click" Background="Transparent" BorderThickness="0"
                         ToolTipService.ToolTip="Abrir carpeta">
                     <FontIcon Glyph="&#xE838;" FontSize="15" />

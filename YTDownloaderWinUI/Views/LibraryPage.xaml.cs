@@ -18,12 +18,96 @@ public sealed partial class LibraryPage : Page
     private readonly Core.FfmpegService _ffmpeg = new();
     private CancellationTokenSource? _coverCts;
 
+    /// <summary>Carpeta/disco que la biblioteca está mostrando ahora mismo.</summary>
+    private string _currentRoot = Core.AppSettings.Current.OutputFolder;
+    private StorageDrive? _selectedDrive;
+    private List<StorageDrive> _drives = new();
+
     public LibraryPage()
     {
         InitializeComponent();
         FilesList.ItemsSource = Entries;
-        Loaded += (_, _) => LoadFiles();
+        Loaded += (_, _) => { RefreshDrives(); LoadFiles(); };
         Core.AppSettings.Current.PropertyChanged += OnSettingsChanged;
+    }
+
+    // ── Unidades / discos ──────────────────────────────────────
+    private void RefreshDrives()
+    {
+        var list = new List<StorageDrive> { BuildHome(Core.AppSettings.Current.OutputFolder) };
+        list.AddRange(Core.DriveService.GetDrives());
+        _drives = list;
+        DriveList.ItemsSource = null;
+        DriveList.ItemsSource = _drives;
+
+        // Mantener selección actual; si no hay, usar "hogar"
+        var match = _drives.FirstOrDefault(d => string.Equals(d.Root, _currentRoot, StringComparison.OrdinalIgnoreCase));
+        _selectedDrive = match ?? _drives[0];
+        UpdateDriveWidget();
+    }
+
+    private static StorageDrive BuildHome(string path)
+    {
+        long free = 0, total = 0;
+        try
+        {
+            var root = Path.GetPathRoot(path);
+            if (!string.IsNullOrEmpty(root))
+            {
+                var di = new DriveInfo(root);
+                if (di.IsReady) { free = di.AvailableFreeSpace; total = di.TotalSize; }
+            }
+        }
+        catch { }
+        return new StorageDrive { Root = path, Label = "Descargas de MediaFy", IsHome = true, FreeBytes = free, TotalBytes = total };
+    }
+
+    private void UpdateDriveWidget()
+    {
+        if (_selectedDrive is null) return;
+        DriveIcon.Glyph  = _selectedDrive.Icon;
+        DriveName.Text   = _selectedDrive.DisplayName;
+        DriveBar.Value   = _selectedDrive.UsedFraction;
+        DriveSpace.Text  = _selectedDrive.SpaceText;
+        DriveEject.Visibility = _selectedDrive.IsRemovable ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void SelectDrive(StorageDrive d)
+    {
+        _selectedDrive = d;
+        _currentRoot = d.Root;
+        UpdateDriveWidget();
+        LoadFiles();
+    }
+
+    private void DriveFlyout_Opening(object? sender, object e) => RefreshDrives();
+
+    private void DriveList_ItemClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is StorageDrive d) { SelectDrive(d); DriveFlyout.Hide(); }
+    }
+
+    private async void DriveEject_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedDrive is null || !_selectedDrive.IsRemovable) return;
+        string letter = _selectedDrive.Letter;
+        bool ok = Core.DriveService.Eject(letter);
+
+        // Volver a la carpeta de descargas y refrescar
+        RefreshDrives();
+        var home = _drives.FirstOrDefault(x => x.IsHome);
+        if (home != null) SelectDrive(home);
+
+        var dlg = new ContentDialog
+        {
+            Title = ok ? "Unidad expulsada" : "No se pudo expulsar",
+            Content = ok
+                ? $"Ya puedes retirar {letter} con seguridad."
+                : $"No se pudo expulsar {letter}. Cierra los archivos en uso (incluido el reproductor) e inténtalo de nuevo.",
+            CloseButtonText = "Entendido",
+            XamlRoot = XamlRoot
+        };
+        try { await dlg.ShowAsync(); } catch { }
     }
 
     /// <summary>Todas las pistas/archivos (sueltos + dentro de álbumes), para portadas y búsquedas.</summary>
@@ -56,7 +140,7 @@ public sealed partial class LibraryPage : Page
     private void LoadFiles()
     {
         Entries.Clear();
-        string folder = Core.AppSettings.Current.OutputFolder;
+        string folder = _currentRoot;
         try
         {
             if (Directory.Exists(folder))
@@ -121,13 +205,16 @@ public sealed partial class LibraryPage : Page
         }, ct);
     }
 
-    private void BtnRefresh_Click(object sender, RoutedEventArgs e) => LoadFiles();
+    private void BtnRefresh_Click(object sender, RoutedEventArgs e) { RefreshDrives(); LoadFiles(); }
 
     private void BtnOpenFolder_Click(object sender, RoutedEventArgs e)
     {
-        string folder = Core.AppSettings.Current.OutputFolder;
-        Directory.CreateDirectory(folder);
-        Process.Start("explorer.exe", folder);
+        try
+        {
+            if (Directory.Exists(_currentRoot))
+                Process.Start("explorer.exe", $"\"{_currentRoot}\"");
+        }
+        catch { }
     }
 
     // ── Reproducir ─────────────────────────────────────────────
