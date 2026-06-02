@@ -107,6 +107,8 @@
             <TextBlock TextAlignment="Center" FontSize="11" Margin="0,4,0,0"
                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                        Text="Construido con WinUI 3 · Windows App SDK · yt-dlp · ffmpeg" />
+            <Image x:Name="CgLabsLogo" Height="24" Stretch="Uniform"
+                   HorizontalAlignment="Center" Margin="0,12,0,2" Opacity="0.85" />
             <TextBlock Text="© 2026 CG LABS" TextAlignment="Center" FontSize="11"
                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
         </StackPanel>

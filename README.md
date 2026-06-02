@@ -263,6 +263,11 @@ MediaFy/
 
 ## 👤 Autor
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/brand/cglabs_white_lockup.png">
+  <img alt="CG LABS" src="docs/brand/cglabs_black_lockup.png" width="260">
+</picture>
+
 **Camilo G. (CG)** — bajo la marca personal **CG LABS**
 
 📦 GitHub: [@cgus392-cmd](https://github.com/cgus392-cmd) · 📧 cgus392@gmail.com
