@@ -239,12 +239,25 @@ MediaFy/
 - [x] Integración profunda con Windows (toast, bandeja, autoarranque, SMTC)
 - [x] Extensión de navegador
 - [x] Instalador clásico + portable
-- [ ] Auto‑update de MediaFy
+- [x] Auto‑update de MediaFy
+- [x] Organizador de archivos dual‑pane
+- [x] Drag & drop de enlaces y archivos
+- [x] Vigilar portapapeles
+- [x] Tutorial de bienvenida con mockup y animaciones
+- [x] Búsqueda de YouTube integrada (Descargas y Cascada)
+- [x] Más formatos/calidad/subtítulos + preferencias por defecto
+- [x] Descarga de álbumes/listas pista por pista (carpeta + numeración)
 - [ ] Cola persistente entre reinicios
-- [ ] Drag & drop de enlaces y archivos
-- [ ] Vigilar portapapeles
 - [ ] Mini‑player flotante always‑on‑top
 - [ ] Buscador en la biblioteca
+
+### 🔮 Plan B / a futuro
+
+- **Motor de JavaScript para YouTube (EJS):** yt‑dlp deprecó su intérprete interno y recomienda un
+  runtime JS (Deno por defecto) para resolver los desafíos *nsig* de YouTube. Por ahora la descarga
+  pista‑por‑pista evita los cuelgues, así que no es urgente. Si YouTube aprieta con los formatos, el
+  plan es **detectar Node/Deno/Bun del sistema** y, solo si no hay ninguno, **descargar Deno bajo
+  demanda** (sin engordar el instalador con ~110 MB).
 
 ---
 
