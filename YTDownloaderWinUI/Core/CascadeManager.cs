@@ -28,12 +28,14 @@ public class CascadeManager
 
     private static string OutputFolder => AppSettings.Current.OutputFolder;
 
-    public DownloadItem? Add(string url, string format, string quality)
+    public DownloadItem? Add(string url, string format, string quality,
+        string subtitles = "Off", bool wholePlaylist = false)
     {
         if (!CanAdd) return null;
         var item = new DownloadItem
         {
             Url = url, Format = format, Quality = quality,
+            Subtitles = subtitles, WholePlaylist = wholePlaylist,
             Status = DownloadStatus.Pending, StatusText = "Sin analizar",
             Title = url.Length > 50 ? url[..50] + "..." : url
         };

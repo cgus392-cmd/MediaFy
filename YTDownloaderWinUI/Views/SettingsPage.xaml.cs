@@ -31,6 +31,11 @@ public sealed partial class SettingsPage : Page
         SelectByTag(CboCut,       Core.AppSettings.Current.CutSaveMode.ToString());
         SelectByTag(CboBackdrop,  Core.AppSettings.Current.BackdropKind.ToString());
 
+        // Preferencias de descarga predeterminadas
+        SelectByContent(CboDlFormat,    Core.AppSettings.Current.DefaultFormat);
+        SelectByContent(CboDlQuality,   Core.AppSettings.Current.DefaultQuality);
+        SelectByContent(CboDlSubtitles, Core.AppSettings.Current.DefaultSubtitles);
+
         TogProtocol.IsOn = Core.UrlProtocol.IsRegistered();
         TogStartup.IsOn  = Core.StartupManager.IsEnabled();
 
@@ -113,6 +118,36 @@ public sealed partial class SettingsPage : Page
             Core.AppSettings.Current.BackdropKind = kind;
             (App.MainWindow as MainWindow)?.ApplyBackdrop(kind);
         }
+    }
+
+    // ── Preferencias de descarga ───────────────────────────────
+
+    private void CboDlFormat_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (CboDlFormat?.SelectedItem is ComboBoxItem item)
+            Core.AppSettings.Current.DefaultFormat = item.Content?.ToString() ?? "MP4";
+    }
+
+    private void CboDlQuality_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (CboDlQuality?.SelectedItem is ComboBoxItem item)
+            Core.AppSettings.Current.DefaultQuality = item.Content?.ToString() ?? "Mejor";
+    }
+
+    private void CboDlSubtitles_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (CboDlSubtitles?.SelectedItem is ComboBoxItem item)
+            Core.AppSettings.Current.DefaultSubtitles = item.Content?.ToString() ?? "Off";
+    }
+
+    private static void SelectByContent(ComboBox combo, string content)
+    {
+        foreach (ComboBoxItem ci in combo.Items)
+        {
+            if (ci.Content?.ToString() == content)
+            { combo.SelectedItem = ci; return; }
+        }
+        if (combo.Items.Count > 0) combo.SelectedIndex = 0;
     }
 
     private static void SelectByTag(ComboBox combo, string tag)

@@ -74,12 +74,14 @@ public class DownloadManager
     }
 
     /// <summary>Añade a la cola y arranca en segundo plano (permite varias en paralelo).</summary>
-    public void AddAndStart(string url, string format, string quality)
+    public void AddAndStart(string url, string format, string quality,
+        string subtitles = "Off", bool wholePlaylist = false)
     {
         Directory.CreateDirectory(OutputFolder);
         var item = new DownloadItem
         {
             Url = url, Format = format, Quality = quality,
+            Subtitles = subtitles, WholePlaylist = wholePlaylist,
             Status = DownloadStatus.Queued, StatusText = "En cola"
         };
         Queue.Add(item);

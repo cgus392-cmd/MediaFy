@@ -74,6 +74,71 @@
                 </Grid>
             </Border>
 
+            <!-- Preferencias de descarga -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="18">
+                <StackPanel Spacing="14">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <FontIcon Glyph="&#xE9F5;" FontSize="18" VerticalAlignment="Center" />
+                        <StackPanel>
+                            <TextBlock Text="Preferencias de descarga" FontWeight="SemiBold" />
+                            <TextBlock Text="Formato, calidad y subtítulos que se usan por defecto"
+                                       FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                    </StackPanel>
+                    <Grid ColumnSpacing="20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Spacing="6">
+                            <TextBlock Text="Formato" FontSize="13" FontWeight="SemiBold" />
+                            <ComboBox x:Name="CboDlFormat" HorizontalAlignment="Stretch"
+                                      SelectionChanged="CboDlFormat_SelectionChanged">
+                                <ComboBoxItem Content="MP4" />
+                                <ComboBoxItem Content="MKV" />
+                                <ComboBoxItem Content="WEBM" />
+                                <ComboBoxItem Content="MP3" />
+                                <ComboBoxItem Content="M4A" />
+                                <ComboBoxItem Content="FLAC" />
+                                <ComboBoxItem Content="WAV" />
+                                <ComboBoxItem Content="OGG" />
+                            </ComboBox>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="6">
+                            <TextBlock Text="Calidad (vídeo)" FontSize="13" FontWeight="SemiBold" />
+                            <ComboBox x:Name="CboDlQuality" HorizontalAlignment="Stretch"
+                                      SelectionChanged="CboDlQuality_SelectionChanged">
+                                <ComboBoxItem Content="Mejor" />
+                                <ComboBoxItem Content="4K" />
+                                <ComboBoxItem Content="2K" />
+                                <ComboBoxItem Content="1080p" />
+                                <ComboBoxItem Content="720p" />
+                                <ComboBoxItem Content="480p" />
+                                <ComboBoxItem Content="360p" />
+                                <ComboBoxItem Content="240p" />
+                            </ComboBox>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Spacing="6">
+                            <TextBlock Text="Subtítulos" FontSize="13" FontWeight="SemiBold" />
+                            <ComboBox x:Name="CboDlSubtitles" HorizontalAlignment="Stretch"
+                                      SelectionChanged="CboDlSubtitles_SelectionChanged">
+                                <ComboBoxItem Content="Off" />
+                                <ComboBoxItem Content="Auto" />
+                                <ComboBoxItem Content="ES" />
+                                <ComboBoxItem Content="EN" />
+                                <ComboBoxItem Content="Todos" />
+                            </ComboBox>
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock FontSize="12" Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                               TextWrapping="Wrap"
+                               Text="Estos valores pre-rellenan las páginas de Descargas y Cascada. Puedes cambiarlos por descarga individualmente." />
+                </StackPanel>
+            </Border>
+
             <!-- yt-dlp -->
             <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"

@@ -48,6 +48,14 @@ public partial class AppSettings : ObservableObject
     /// <summary>Última carpeta del panel destino del organizador (para recordarla entre sesiones).</summary>
     [ObservableProperty] private string _organizerRightPath = string.Empty;
 
+    // ── Preferencias de descarga predeterminadas ────────────────
+    /// <summary>Formato predeterminado para nuevas descargas (MP4, MKV, MP3, FLAC…).</summary>
+    [ObservableProperty] private string _defaultFormat = "MP4";
+    /// <summary>Calidad predeterminada para nuevas descargas (Mejor, 1080p, 720p…).</summary>
+    [ObservableProperty] private string _defaultQuality = "Mejor";
+    /// <summary>Subtítulos predeterminados (Off, Auto, ES, EN).</summary>
+    [ObservableProperty] private string _defaultSubtitles = "Off";
+
     private static Dictionary<string, bool> DefaultPlatforms() => new()
     {
         [nameof(Platform.YouTube)]     = true,

@@ -44,6 +44,11 @@ public partial class DownloadItem : ObservableObject
     /// <summary>Si no es nulo, es una descarga de Spotify (match con YouTube + re-tag).</summary>
     public SpotifyTrack? Spotify { get; set; }
 
+    /// <summary>Idioma de subtítulos a incrustar: Off | Auto | ES | EN.</summary>
+    public string Subtitles { get; set; } = "Off";
+    /// <summary>Si true, descarga la lista de reproducción completa (quita --no-playlist).</summary>
+    public bool WholePlaylist { get; set; }
+
     // ── Progreso rico (Fase 2) ──
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowDetails), nameof(DetailLine))]
@@ -73,7 +78,7 @@ public partial class DownloadItem : ObservableObject
     /// <summary>Líneas de log crudas de yt-dlp para el panel de registro.</summary>
     public ObservableCollection<string> Logs { get; } = new();
 
-    public bool IsAudio    => Format is "MP3" or "M4A" or "OGG";
+    public bool IsAudio    => Format is "MP3" or "M4A" or "OGG" or "FLAC" or "WAV" or "OPUS";
     public bool IsDone     => Status == DownloadStatus.Done;
     public bool IsError    => Status == DownloadStatus.Error;
     public bool IsCanceled => Status == DownloadStatus.Canceled;

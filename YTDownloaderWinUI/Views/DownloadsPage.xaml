@@ -221,44 +221,78 @@
             </Grid>
         </Border>
 
-        <!-- Formato / Calidad / Simultáneas / Descargar -->
+        <!-- Formato / Calidad / Subtítulos / Lista / Descargar -->
         <Grid Grid.Row="3" Margin="0,14,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="14" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="14" />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="14" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
+            <!-- Formato -->
             <StackPanel Grid.Column="0">
                 <TextBlock Text="FORMATO" FontSize="11" FontWeight="SemiBold"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="2,0,0,4" />
                 <ComboBox x:Name="CboFormat" Width="120" SelectionChanged="CboFormat_SelectionChanged">
-                    <ComboBoxItem Content="MP4" IsSelected="True" />
+                    <ComboBoxItem Content="MP4" />
+                    <ComboBoxItem Content="MKV" />
+                    <ComboBoxItem Content="WEBM" />
                     <ComboBoxItem Content="MP3" />
                     <ComboBoxItem Content="M4A" />
-                    <ComboBoxItem Content="WEBM" />
+                    <ComboBoxItem Content="FLAC" />
+                    <ComboBoxItem Content="WAV" />
                     <ComboBoxItem Content="OGG" />
                 </ComboBox>
             </StackPanel>
 
+            <!-- Calidad -->
             <StackPanel Grid.Column="2">
                 <TextBlock Text="CALIDAD" FontSize="11" FontWeight="SemiBold"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="2,0,0,4" />
-                <ComboBox x:Name="CboQuality" Width="130">
-                    <ComboBoxItem Content="Mejor" IsSelected="True" />
+                <ComboBox x:Name="CboQuality" Width="120">
+                    <ComboBoxItem Content="Mejor" />
                     <ComboBoxItem Content="4K" />
+                    <ComboBoxItem Content="2K" />
                     <ComboBoxItem Content="1080p" />
                     <ComboBoxItem Content="720p" />
                     <ComboBoxItem Content="480p" />
                     <ComboBoxItem Content="360p" />
+                    <ComboBoxItem Content="240p" />
                 </ComboBox>
             </StackPanel>
 
-            <Button Grid.Column="4" x:Name="BtnDownload" Click="BtnDownload_Click"
+            <!-- Subtítulos -->
+            <StackPanel Grid.Column="4">
+                <TextBlock Text="SUBTÍTULOS" FontSize="11" FontWeight="SemiBold"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="2,0,0,4" />
+                <ComboBox x:Name="CboSubtitles" Width="110">
+                    <ComboBoxItem Content="Off" />
+                    <ComboBoxItem Content="Auto" />
+                    <ComboBoxItem Content="ES" />
+                    <ComboBoxItem Content="EN" />
+                    <ComboBoxItem Content="Todos" />
+                </ComboBox>
+            </StackPanel>
+
+            <!-- Lista completa -->
+            <StackPanel Grid.Column="6" VerticalAlignment="Bottom" Margin="0,0,0,6">
+                <TextBlock Text="LISTA" FontSize="11" FontWeight="SemiBold"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="2,0,0,4" />
+                <ToggleSwitch x:Name="TglPlaylist" IsOn="False"
+                              OnContent="Completa" OffContent="1 vídeo"
+                              MinWidth="0" />
+            </StackPanel>
+
+            <!-- Descargar -->
+            <Button Grid.Column="8" x:Name="BtnDownload" Click="BtnDownload_Click"
                     Style="{ThemeResource AccentButtonStyle}"
-                    MinWidth="150" VerticalAlignment="Bottom">
+                    MinWidth="140" VerticalAlignment="Bottom">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <FontIcon Glyph="&#xE896;" FontSize="14" />
                     <TextBlock Text="Descargar" />

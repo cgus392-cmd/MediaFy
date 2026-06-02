@@ -34,6 +34,27 @@ public sealed partial class DownloadsPage : Page
 
         if (!_manager.IsReady)
             TxtStatus.Text = "⚠  Faltan yt-dlp.exe o ffmpeg.exe en Assets/";
+
+        Loaded += OnLoaded;
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        // Pre-rellenar desde los defaults de Configuración
+        SelectComboByContent(CboFormat, Core.AppSettings.Current.DefaultFormat);
+        // La calidad se actualiza al cambiar el formato, así que la seteamos después
+        SelectComboByContent(CboQuality, Core.AppSettings.Current.DefaultQuality);
+        SelectComboByContent(CboSubtitles, Core.AppSettings.Current.DefaultSubtitles);
+    }
+
+    private static void SelectComboByContent(ComboBox cbo, string content)
+    {
+        foreach (ComboBoxItem item in cbo.Items)
+        {
+            if (item.Content?.ToString() == content)
+            { cbo.SelectedItem = item; return; }
+        }
+        if (cbo.Items.Count > 0) cbo.SelectedIndex = 0;
     }
 
     // ── Entrada del usuario ────────────────────────────────────
@@ -298,10 +319,12 @@ public sealed partial class DownloadsPage : Page
             return;
         }
 
-        string format  = (string)((ComboBoxItem)CboFormat.SelectedItem).Content;
-        string quality = (string)((ComboBoxItem)CboQuality.SelectedItem).Content;
+        string format    = (string)((ComboBoxItem)CboFormat.SelectedItem).Content;
+        string quality   = (string)((ComboBoxItem)CboQuality.SelectedItem).Content;
+        string subtitles = (string)((ComboBoxItem)CboSubtitles.SelectedItem).Content;
+        bool   playlist  = TglPlaylist.IsOn;
 
-        _manager.AddAndStart(url, format, quality);
+        _manager.AddAndStart(url, format, quality, subtitles, playlist);
 
         TxtUrl.Text = string.Empty;
         HideAllPanels();
@@ -365,15 +388,21 @@ public sealed partial class DownloadsPage : Page
     {
         if (CboQuality == null) return;
         string format = (string)((ComboBoxItem)CboFormat.SelectedItem).Content;
-        bool isAudio = format is "MP3" or "M4A" or "OGG";
+        bool isAudio   = format is "MP3" or "M4A" or "OGG" or "FLAC" or "WAV" or "OPUS";
+        bool isLossless = format is "FLAC" or "WAV";
 
         CboQuality.Items.Clear();
-        string[] options = isAudio
-            ? new[] { "320kbps", "256kbps", "192kbps", "128kbps" }
-            : new[] { "Mejor", "4K", "1080p", "720p", "480p", "360p" };
+        string[] options = isLossless
+            ? new[] { "Mejor (sin pérdida)" }
+            : isAudio
+                ? new[] { "320kbps", "256kbps", "192kbps", "128kbps", "64kbps" }
+                : new[] { "Mejor", "4K", "2K", "1080p", "720p", "480p", "360p", "240p" };
 
         foreach (var q in options)
             CboQuality.Items.Add(new ComboBoxItem { Content = q });
-        CboQuality.SelectedIndex = 0;
+
+        // Intentar restaurar la última calidad usada o el default
+        string preferred = Core.AppSettings.Current.DefaultQuality;
+        SelectComboByContent(CboQuality, preferred);
     }
 }

@@ -143,14 +143,29 @@ public class YtDlpService
         string ext = GetExtension(item.Format);
         string outputTemplate = Path.Combine(outputFolder, "%(title)s.%(ext)s");
 
+        // Playlist: por defecto solo este vídeo; si el usuario quiere la lista completa, quitamos --no-playlist
+        string playlistFlag = item.WholePlaylist ? string.Empty : "--no-playlist";
+
+        // Subtítulos
+        string subFlags = item.Subtitles switch
+        {
+            "Auto" => "--write-subs --embed-subs --sub-langs \"auto\"",
+            "ES"   => "--write-subs --embed-subs --sub-langs \"es\"",
+            "EN"   => "--write-subs --embed-subs --sub-langs \"en\"",
+            "Todos"=> "--write-subs --embed-subs --sub-langs \"all\"",
+            _      => string.Empty
+        };
+
         string common =
             $"--ffmpeg-location \"{_ffmpegPath}\" " +
-            $"--embed-thumbnail --embed-metadata --no-playlist --newline " +
+            $"--embed-thumbnail --embed-metadata {playlistFlag} {subFlags} --newline " +
             $"--progress-template \"{ProgressTemplate}\" " +
             $"-o \"{outputTemplate}\" \"{item.Url}\"";
 
+        // Para formatos sin pérdida (FLAC/WAV) la calidad de audio no aplica, siempre mejor
+        string audioQ = item.Format is "FLAC" or "WAV" ? "0" : AudioQuality(item.Quality);
         string args = item.IsAudio
-            ? $"-x --audio-format {ext} --audio-quality {AudioQuality(item.Quality)} --add-metadata {common}"
+            ? $"-x --audio-format {ext} --audio-quality {audioQ} --add-metadata {common}"
             : $"{formatArg} {common}";
 
         await RunWithProgressAsync(_ytDlpPath, args, progress, ct);
@@ -244,11 +259,24 @@ public class YtDlpService
             "MP4" => quality switch
             {
                 "4K"    => "-f \"bestvideo[height<=2160][ext=mp4]+bestaudio[ext=m4a]/best[height<=2160][ext=mp4]\"",
+                "2K"    => "-f \"bestvideo[height<=1440][ext=mp4]+bestaudio[ext=m4a]/best[height<=1440][ext=mp4]\"",
                 "1080p" => "-f \"bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080][ext=mp4]\"",
                 "720p"  => "-f \"bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]\"",
                 "480p"  => "-f \"bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/best[height<=480][ext=mp4]\"",
                 "360p"  => "-f \"bestvideo[height<=360][ext=mp4]+bestaudio[ext=m4a]/best[height<=360][ext=mp4]\"",
+                "240p"  => "-f \"bestvideo[height<=240][ext=mp4]+bestaudio[ext=m4a]/best[height<=240][ext=mp4]\"",
                 _       => "-f \"bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]\"",
+            },
+            "MKV" => quality switch
+            {
+                "4K"    => "-f \"bestvideo[height<=2160]+bestaudio/best[height<=2160]\" --merge-output-format mkv",
+                "2K"    => "-f \"bestvideo[height<=1440]+bestaudio/best[height<=1440]\" --merge-output-format mkv",
+                "1080p" => "-f \"bestvideo[height<=1080]+bestaudio/best[height<=1080]\" --merge-output-format mkv",
+                "720p"  => "-f \"bestvideo[height<=720]+bestaudio/best[height<=720]\" --merge-output-format mkv",
+                "480p"  => "-f \"bestvideo[height<=480]+bestaudio/best[height<=480]\" --merge-output-format mkv",
+                "360p"  => "-f \"bestvideo[height<=360]+bestaudio/best[height<=360]\" --merge-output-format mkv",
+                "240p"  => "-f \"bestvideo[height<=240]+bestaudio/best[height<=240]\" --merge-output-format mkv",
+                _       => "-f \"bestvideo+bestaudio/best\" --merge-output-format mkv",
             },
             "WEBM" => "-f \"bestvideo[ext=webm]+bestaudio[ext=webm]/best[ext=webm]\"",
             _ => "-f best"
@@ -266,11 +294,15 @@ public class YtDlpService
 
     private static string GetExtension(string format) => format.ToLower() switch
     {
-        "mp3" => "mp3",
-        "m4a" => "m4a",
-        "ogg" => "vorbis",
+        "mp3"  => "mp3",
+        "m4a"  => "m4a",
+        "ogg"  => "vorbis",
+        "flac" => "flac",
+        "wav"  => "wav",
+        "opus" => "opus",
         "webm" => "webm",
-        _ => "mp4"
+        "mkv"  => "mkv",
+        _      => "mp4"
     };
 
     private static string FormatDuration(int seconds)
