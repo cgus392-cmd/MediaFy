@@ -25,4 +25,7 @@ public sealed partial class AboutPage : Page
         var w = new WelcomeWindow();
         w.Activate();
     }
+
+    private async void BtnTerms_Click(object sender, RoutedEventArgs e)
+        => await TermsDialog.ShowAsync(XamlRoot, requireAccept: false);
 }

@@ -43,12 +43,8 @@ public partial class App : Application
             MainWindow = new MainWindow();
             if (!StartedInTray) MainWindow.Activate();
 
-            // Mostrar tutorial de bienvenida solo la primera vez
-            if (!StartedInTray && !AppSettings.Current.WelcomeShown)
-            {
-                var w = new WelcomeWindow();
-                w.Activate();
-            }
+            // Primer arranque: términos obligatorios y luego el tutorial de bienvenida
+            if (!StartedInTray) _ = ShowFirstRunAsync();
 
             // Procesa la activación inicial (CLI args o mediafy://...)
             var initial = AppInstance.GetCurrent().GetActivatedEventArgs();
@@ -78,6 +74,29 @@ public partial class App : Application
             Log($"OnLaunched: {ex}");
             throw;
         }
+    }
+
+    /// <summary>Primer arranque: exige aceptar los términos; si no, cierra. Luego muestra el tutorial.</summary>
+    private static async Task ShowFirstRunAsync()
+    {
+        if (MainWindow is not MainWindow mw) return;
+        var root = mw.Content?.XamlRoot;
+        if (root == null) return;
+        try
+        {
+            if (!AppSettings.Current.TermsAccepted)
+            {
+                bool accepted = await TermsDialog.ShowAsync(root, requireAccept: true);
+                if (!accepted) { Current.Exit(); return; }
+                AppSettings.Current.TermsAccepted = true;
+            }
+            if (!AppSettings.Current.WelcomeShown)
+            {
+                var w = new WelcomeWindow();
+                w.Activate();
+            }
+        }
+        catch (Exception ex) { Log($"FirstRun: {ex.Message}"); }
     }
 
     /// <summary>Llamado desde Program cuando una instancia adicional se redirige a esta.</summary>

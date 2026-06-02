@@ -293,6 +293,12 @@ public sealed partial class WelcomeWindow : Window
     }
     private void Home_Click(object sender, RoutedEventArgs e) { _index = 0; Render(); }
 
+    private async void Terms_Click(object sender, RoutedEventArgs e)
+    {
+        if (Content?.XamlRoot is { } root)
+            await TermsDialog.ShowAsync(root, requireAccept: false);
+    }
+
     private void Finish()
     {
         AppSettings.Current.WelcomeShown = true;

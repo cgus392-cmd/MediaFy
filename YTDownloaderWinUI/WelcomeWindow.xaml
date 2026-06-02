@@ -41,6 +41,8 @@
                         Padding="22,10" HorizontalAlignment="Left">
                     <TextBlock x:Name="PrimaryButtonText" Text="Comenzar" FontSize="14" />
                 </Button>
+                <HyperlinkButton Click="Terms_Click" Padding="0" Margin="0,2,0,0"
+                                 Content="Leer términos y descargo de responsabilidad" FontSize="12" />
             </StackPanel>
 
             <!-- Columna derecha: mockup -->
