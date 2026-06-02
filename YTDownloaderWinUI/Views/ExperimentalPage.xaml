@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="YTDownloader.Views.ExperimentalPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="Transparent">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="28,12,28,28" Spacing="14" MaxWidth="820">
+
+            <!-- Encabezado -->
+            <StackPanel Spacing="6">
+                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                    <TextBlock Text="Separar pistas (Stems)" FontSize="28" FontWeight="SemiBold" />
+                    <Border Background="{ThemeResource SystemFillColorCautionBackgroundBrush}"
+                            CornerRadius="10" Padding="10,3" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE9F5;" FontSize="12"
+                                      Foreground="{ThemeResource SystemFillColorCautionBrush}" />
+                            <TextBlock Text="EXPERIMENTAL · BETA" FontSize="11" FontWeight="SemiBold"
+                                       Foreground="{ThemeResource SystemFillColorCautionBrush}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+                <TextBlock TextWrapping="Wrap" FontSize="14"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           Text="Separa una canción en pistas (voz, batería, bajo, otros) con IA, localmente en tu PC. Esta sección es experimental: puede tener fallos y se irá puliendo." />
+            </StackPanel>
+
+            <!-- Detección de hardware -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="18">
+                <StackPanel Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <FontIcon Glyph="&#xE950;" FontSize="18" VerticalAlignment="Center" />
+                        <TextBlock Text="Tu equipo" FontWeight="SemiBold" FontSize="15" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <Grid ColumnSpacing="20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Modo recomendado" FontSize="12"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            <TextBlock x:Name="HwMode" Text="Detectando…" FontWeight="SemiBold" FontSize="14" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="Detalle" FontSize="12"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            <TextBlock x:Name="HwDetail" Text="…" FontSize="14" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Separación -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="18">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="Separar una canción" FontWeight="SemiBold" FontSize="15" />
+
+                    <!-- Archivo -->
+                    <Grid ColumnSpacing="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Border Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                                CornerRadius="6" Padding="12,8" VerticalAlignment="Center">
+                            <TextBlock x:Name="TxtFile" Text="Ningún archivo seleccionado"
+                                       TextTrimming="CharacterEllipsis" MaxLines="1"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </Border>
+                        <Button Grid.Column="1" Click="BtnPickFile_Click" Content="Elegir archivo…" />
+                    </Grid>
+
+                    <!-- Modo de stems -->
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Pistas a separar" FontSize="13" FontWeight="SemiBold" />
+                        <RadioButtons x:Name="StemsMode" SelectedIndex="0">
+                            <RadioButton Content="2 pistas — Voz + Música (más rápido)" />
+                            <RadioButton Content="4 pistas — Voz, Batería, Bajo y Otros (completo)" />
+                        </RadioButtons>
+                    </StackPanel>
+
+                    <Button x:Name="BtnSeparate" Click="BtnSeparate_Click"
+                            Style="{ThemeResource AccentButtonStyle}" Padding="20,10"
+                            HorizontalAlignment="Left">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE8C4;" FontSize="14" />
+                            <TextBlock Text="Separar pistas" />
+                        </StackPanel>
+                    </Button>
+
+                    <InfoBar x:Name="EngineBar" IsOpen="True" Severity="Informational"
+                             Title="Motor de IA no instalado"
+                             Message="La primera vez se descargará el motor de separación (Demucs / UVR) y el modelo. Pulsa para ver detalles e instalarlo.">
+                        <InfoBar.ActionButton>
+                            <Button Content="Ver detalles e instalar" Click="BtnInstallEngine_Click" />
+                        </InfoBar.ActionButton>
+                    </InfoBar>
+                </StackPanel>
+            </Border>
+
+            <!-- Expectativas -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="18">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Qué debes saber" FontWeight="SemiBold" FontSize="15" />
+                    <StackPanel Spacing="6">
+                        <TextBlock TextWrapping="Wrap" FontSize="13">
+                            <Run FontWeight="SemiBold" Text="📦 Tamaño:" />
+                            <Run Text=" el motor de IA se descarga aparte (~1 GB en CPU, ~2-3 GB con GPU NVIDIA). No infla el instalador de MediaFy." />
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" FontSize="13">
+                            <Run FontWeight="SemiBold" Text="⚡ Velocidad:" />
+                            <Run Text=" con GPU NVIDIA, segundos a ~1 min por canción. Solo con CPU, entre 1 y 5 min." />
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" FontSize="13">
+                            <Run FontWeight="SemiBold" Text="🎚️ Modelos:" />
+                            <Run Text=" 2 pistas usa MDX-Net (voz/música, muy rápido); 4 pistas usa Demucs (voz, batería, bajo, otros)." />
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" FontSize="13">
+                            <Run FontWeight="SemiBold" Text="⚖️ Licencias:" />
+                            <Run Text=" Demucs y los modelos UVR son de código abierto (MIT). Uso responsable según el descargo de responsabilidad." />
+                        </TextBlock>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</Page>

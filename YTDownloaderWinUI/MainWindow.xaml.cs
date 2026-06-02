@@ -65,7 +65,22 @@ public sealed partial class MainWindow : Window
 
         _vuTimer.Tick += VuTimer_Tick;
         // El VU solo se ejecuta mientras haya reproducción (se arranca en OnPlaybackChanged)
+
+        // Centro de notificaciones
+        NotifList.ItemsSource = Core.NotificationCenter.Tasks;
+        Core.NotificationCenter.Changed += () => DispatcherQueue.TryEnqueue(RefreshNotifBadge);
+        RefreshNotifBadge();
     }
+
+    private void RefreshNotifBadge()
+    {
+        int active = Core.NotificationCenter.ActiveCount;
+        NotifBadge.Value = active;
+        NotifBadge.Visibility = active > 0 ? Visibility.Visible : Visibility.Collapsed;
+        NotifEmpty.Visibility = Core.NotificationCenter.Tasks.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void Notif_Clear_Click(object sender, RoutedEventArgs e) => Core.NotificationCenter.Clear();
 
     /// <summary>Aplica el telón de fondo a toda la ventana en vivo.</summary>
     public void ApplyBackdrop(BackdropKind kind) => _backdrop?.Apply(kind);
@@ -83,8 +98,9 @@ public sealed partial class MainWindow : Window
                 case "library":   ContentFrame.Navigate(typeof(LibraryPage));   break;
                 case "editor":    ContentFrame.Navigate(typeof(EditorPage));    break;
                 case "organizer": ContentFrame.Navigate(typeof(OrganizerPage)); break;
-                case "resources": ContentFrame.Navigate(typeof(ResourcePage));  break;
-                case "about":     ContentFrame.Navigate(typeof(AboutPage));     break;
+                case "resources":    ContentFrame.Navigate(typeof(ResourcePage));     break;
+                case "experimental": ContentFrame.Navigate(typeof(ExperimentalPage)); break;
+                case "about":        ContentFrame.Navigate(typeof(AboutPage));         break;
             }
         }
     }
