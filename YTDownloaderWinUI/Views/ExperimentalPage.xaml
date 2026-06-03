@@ -55,6 +55,42 @@
                 </StackPanel>
             </Border>
 
+            <!-- Consumo en vivo CPU/GPU -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="18">
+                <StackPanel Spacing="12">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <FontIcon Glyph="&#xE9D9;" FontSize="18" VerticalAlignment="Center" />
+                        <TextBlock Text="Consumo en vivo" FontWeight="SemiBold" FontSize="15" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="42" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="46" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="CPU" FontSize="13" VerticalAlignment="Center" />
+                        <ProgressBar x:Name="CpuBar" Grid.Column="1" Minimum="0" Maximum="100" Value="0" VerticalAlignment="Center" />
+                        <TextBlock x:Name="CpuPctText" Grid.Column="2" Text="0%" FontSize="12" TextAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="42" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="46" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="GPU" FontSize="13" VerticalAlignment="Center" />
+                        <ProgressBar x:Name="GpuBar" Grid.Column="1" Minimum="0" Maximum="100" Value="0" VerticalAlignment="Center"
+                                     Foreground="{ThemeResource SystemFillColorSuccessBrush}" />
+                        <TextBlock x:Name="GpuPctText" Grid.Column="2" Text="—" FontSize="12" TextAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+                    <TextBlock x:Name="GpuNote" FontSize="11" Visibility="Collapsed"
+                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                               Text="Sin GPU NVIDIA: la separación usará la CPU." />
+                </StackPanel>
+            </Border>
+
             <!-- Separación -->
             <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
@@ -86,6 +122,16 @@
                         </RadioButtons>
                     </StackPanel>
 
+                    <!-- Calidad del modelo -->
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Calidad del modelo" FontSize="13" FontWeight="SemiBold" />
+                        <ComboBox x:Name="QualityMode" SelectedIndex="0" HorizontalAlignment="Stretch">
+                            <ComboBoxItem Content="Estándar — rápido" />
+                            <ComboBoxItem Content="Alta calidad — MDX23C / Demucs FT (más lento)" />
+                            <ComboBoxItem Content="Máxima — Roformer (lo mejor del mundo, más lento)" />
+                        </ComboBox>
+                    </StackPanel>
+
                     <Button x:Name="BtnSeparate" Click="BtnSeparate_Click"
                             Style="{ThemeResource AccentButtonStyle}" Padding="20,10"
                             HorizontalAlignment="Left">
@@ -95,6 +141,13 @@
                         </StackPanel>
                     </Button>
 
+                    <!-- Progreso en línea (también aquí, no solo en notificaciones) -->
+                    <StackPanel x:Name="ProgressPanel" Spacing="6" Visibility="Collapsed">
+                        <ProgressBar x:Name="InlineProgress" Minimum="0" Maximum="100" Value="0" />
+                        <TextBlock x:Name="InlineStatus" FontSize="12" TextWrapping="Wrap"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+
                     <InfoBar x:Name="EngineBar" IsOpen="True" Severity="Informational"
                              Title="Motor de IA no instalado"
                              Message="La primera vez se descargará el motor de separación (Demucs / UVR) y el modelo. Pulsa para ver detalles e instalarlo.">
@@ -102,6 +155,29 @@
                             <Button Content="Ver detalles e instalar" Click="BtnInstallEngine_Click" />
                         </InfoBar.ActionButton>
                     </InfoBar>
+                </StackPanel>
+            </Border>
+
+            <!-- Administrar motor de IA -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="18">
+                <StackPanel Spacing="12">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <FontIcon Glyph="&#xE74C;" FontSize="18" VerticalAlignment="Center" />
+                        <TextBlock Text="Administrar motor de IA" FontWeight="SemiBold" FontSize="15" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <TextBlock x:Name="EngineSizeText" Text="Motor no instalado." FontSize="13"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <Button x:Name="BtnDeleteEngine" Click="BtnDeleteEngine_Click" Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE74D;" FontSize="14" />
+                            <TextBlock Text="Borrar motor y modelos (reiniciar)" />
+                        </StackPanel>
+                    </Button>
+                    <TextBlock FontSize="11" TextWrapping="Wrap"
+                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                               Text="Libera el espacio del motor de IA y deja la sección Experimental como recién instalada. Podrás reinstalarlo cuando quieras." />
                 </StackPanel>
             </Border>
 
@@ -122,7 +198,7 @@
                         </TextBlock>
                         <TextBlock TextWrapping="Wrap" FontSize="13">
                             <Run FontWeight="SemiBold" Text="🎚️ Modelos:" />
-                            <Run Text=" 2 pistas usa MDX-Net (voz/música, muy rápido); 4 pistas usa Demucs (voz, batería, bajo, otros)." />
+                            <Run Text=" elige la calidad: Estándar (MDX-Net, rápido), Alta (MDX23C / Demucs FT) o Máxima (BS-Roformer, el mejor del mundo en separar voz, pero más lento). A más calidad, más tiempo y más uso de GPU/CPU." />
                         </TextBlock>
                         <TextBlock TextWrapping="Wrap" FontSize="13">
                             <Run FontWeight="SemiBold" Text="⚖️ Licencias:" />

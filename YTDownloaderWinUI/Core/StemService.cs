@@ -155,7 +155,7 @@ public class StemService
     /// <summary>
     /// Ejecuta la separación de pistas de audio de forma asíncrona.
     /// </summary>
-    public async Task<string> SeparateAsync(string inputFile, int stemsCount, IProgress<(double pct, string msg)> progress, CancellationToken ct)
+    public async Task<string> SeparateAsync(string inputFile, string modelFilename, IProgress<(double pct, string msg)> progress, CancellationToken ct)
     {
         string pythonExe = GetPythonExePath();
         if (string.IsNullOrEmpty(pythonExe) || !File.Exists(pythonExe))
@@ -168,11 +168,7 @@ public class StemService
         Directory.CreateDirectory(albumFolder);
         Directory.CreateDirectory(_modelsDir);
 
-        // Elegir el modelo correspondiente
-        string modelFilename = stemsCount == 4 ? "htdemucs.yaml" : "UVR-MDX-NET-Inst_HQ_3.onnx";
-        string modelLabel = stemsCount == 4 ? "Demucs (4 pistas)" : "MDX-Net (2 pistas)";
-
-        progress.Report((5, $"Iniciando separación con {modelLabel}..."));
+        progress.Report((5, $"Iniciando separación ({modelFilename})..."));
 
         // Preparar argumentos (usando python -c para importar y ejecutar main(), ya que -m solo define la función pero no la invoca)
         string args = $"-c \"from audio_separator.utils.cli import main; main()\" \"{inputFile}\" --model_filename \"{modelFilename}\" --output_dir \"{albumFolder}\" --model_file_dir \"{_modelsDir}\" --output_format wav";
@@ -317,6 +313,39 @@ public class StemService
                 catch { }
             }
         }
+    }
+
+    /// <summary>Tamaño total que ocupa el motor de IA (Python + modelos) en disco.</summary>
+    public long GetEngineSizeBytes()
+    {
+        try
+        {
+            if (!Directory.Exists(_engineDir)) return 0;
+            return new DirectoryInfo(_engineDir)
+                .EnumerateFiles("*", SearchOption.AllDirectories)
+                .Sum(f => { try { return f.Length; } catch { return 0L; } });
+        }
+        catch { return 0; }
+    }
+
+    /// <summary>Borra por completo el motor de IA y los modelos (deja la sección como recién instalada).</summary>
+    public void UninstallEngine()
+    {
+        // Cierra cualquier python del entorno que esté en uso
+        try
+        {
+            foreach (var p in Process.GetProcessesByName("python"))
+            {
+                try
+                {
+                    if (p.MainModule?.FileName?.StartsWith(_engineDir, StringComparison.OrdinalIgnoreCase) == true)
+                        p.Kill(entireProcessTree: true);
+                }
+                catch { }
+            }
+        }
+        catch { }
+        try { if (Directory.Exists(_engineDir)) Directory.Delete(_engineDir, true); } catch { }
     }
 
     private string GetPythonExePath()

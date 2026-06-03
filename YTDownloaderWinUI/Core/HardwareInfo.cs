@@ -56,6 +56,51 @@ public static class HardwareInfo
         return (false, "CPU — más lento", $"Sin GPU NVIDIA · {ramTxt}");
     }
 
+    // ── Consumo en vivo (para la sección Experimental) ──
+    [StructLayout(LayoutKind.Sequential)]
+    private struct FILETIME { public uint Low; public uint High; }
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool GetSystemTimes(out FILETIME idle, out FILETIME kernel, out FILETIME user);
+    private static ulong ToU(FILETIME f) => ((ulong)f.High << 32) | f.Low;
+    private static ulong _pIdle, _pKernel, _pUser; private static bool _cpuPrimed;
+
+    /// <summary>Uso de CPU (0..100). Mantiene estado entre llamadas (~1/seg).</summary>
+    public static double CpuUsagePercent()
+    {
+        if (!GetSystemTimes(out var i, out var k, out var u)) return 0;
+        ulong idle = ToU(i), kernel = ToU(k), user = ToU(u);
+        double pct = 0;
+        if (_cpuPrimed)
+        {
+            double total = (kernel - _pKernel) + (user - _pUser);
+            double idl = idle - _pIdle;
+            pct = total > 0 ? (1.0 - idl / total) * 100.0 : 0;
+        }
+        _pIdle = idle; _pKernel = kernel; _pUser = user; _cpuPrimed = true;
+        return Math.Clamp(pct, 0, 100);
+    }
+
+    /// <summary>Uso de GPU NVIDIA (0..100) vía nvidia-smi, o -1 si no hay. Llamar en background (~50-100ms).</summary>
+    public static double GpuUsagePercent()
+    {
+        if (!HasNvidiaGpu) return -1;
+        try
+        {
+            using var p = Process.Start(new ProcessStartInfo
+            {
+                FileName = Path.Combine(Environment.SystemDirectory, "nvidia-smi.exe"),
+                Arguments = "--query-gpu=utilization.gpu --format=csv,noheader,nounits",
+                RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true
+            })!;
+            string outp = p.StandardOutput.ReadToEnd().Trim();
+            p.WaitForExit(2000);
+            var first = outp.Split('\n').FirstOrDefault()?.Trim();
+            if (double.TryParse(first, out double g)) return Math.Clamp(g, 0, 100);
+        }
+        catch { }
+        return -1;
+    }
+
     [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
     private static extern bool GlobalMemoryStatusEx([In, Out] MEMORYSTATUSEX lpBuffer);
 
