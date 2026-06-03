@@ -11,4 +11,5 @@ public class LibraryAlbum
 
     public int TrackCount => Tracks.Count;
     public string MetaLine => TrackCount == 1 ? "1 pista" : $"{TrackCount} pistas";
+    public bool IsStemsAlbum => Name.StartsWith("Stems de", StringComparison.OrdinalIgnoreCase);
 }

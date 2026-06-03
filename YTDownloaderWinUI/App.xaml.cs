@@ -14,6 +14,7 @@ public partial class App : Application
     public static PlaybackService Playback { get; } = new();
     public static UpdateService Updater { get; } = new();
     public static ClipboardWatcher Clipboard { get; } = new();
+    public static StemService Stems { get; } = new();
     public static Window? MainWindow { get; private set; }
 
     public App()

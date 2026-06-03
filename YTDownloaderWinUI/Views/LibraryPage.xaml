@@ -84,11 +84,19 @@
                             <TextBlock Text="{x:Bind MetaLine}" FontSize="12" Margin="0,3,0,0"
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                         </StackPanel>
-                        <Button Grid.Column="2" Click="BtnRevealFolder_Click" Tag="{x:Bind FolderPath}"
-                                Background="Transparent" BorderThickness="0" Width="40" Height="40" Padding="0"
-                                Margin="0,0,8,0" ToolTipService.ToolTip="Abrir carpeta del álbum">
-                            <FontIcon Glyph="&#xE838;" FontSize="15" />
-                        </Button>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
+                            <Button Click="BtnOpenMixer_Click" Tag="{x:Bind FolderPath}"
+                                    Visibility="{x:Bind IsStemsAlbum, Mode=OneWay, Converter={StaticResource BoolVis}}"
+                                    Background="Transparent" BorderThickness="0" Width="40" Height="40" Padding="0"
+                                    Margin="0,0,8,0" ToolTipService.ToolTip="Abrir Mezclador PRO">
+                                <FontIcon Glyph="&#xE9D9;" FontSize="15" />
+                            </Button>
+                            <Button Click="BtnRevealFolder_Click" Tag="{x:Bind FolderPath}"
+                                    Background="Transparent" BorderThickness="0" Width="40" Height="40" Padding="0"
+                                    ToolTipService.ToolTip="Abrir carpeta del álbum">
+                                <FontIcon Glyph="&#xE838;" FontSize="15" />
+                            </Button>
+                        </StackPanel>
                     </Grid>
                 </Expander.Header>
                 <ItemsControl ItemsSource="{x:Bind Tracks}" ItemTemplate="{StaticResource FileTpl}"

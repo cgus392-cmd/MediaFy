@@ -88,6 +88,43 @@ public class FfmpegService
     }
 
     /// <summary>
+    /// Exporta una mezcla de múltiples pistas (Stems) aplicando los volúmenes y muteos actuales.
+    /// </summary>
+    public async Task<string> ExportMixAsync(IReadOnlyList<StemTrack> tracks, string outPath, CancellationToken ct = default)
+    {
+        if (tracks.Count == 0) return outPath;
+
+        var sb = new StringBuilder();
+        var filter = new StringBuilder();
+        int activeInputs = 0;
+        
+        for (int i = 0; i < tracks.Count; i++)
+        {
+            sb.Append($"-i \"{tracks[i].FilePath}\" ");
+            
+            // Calculamos el volumen real (0 si está silenciada o si hay otro track en solo)
+            double vol = tracks[i].IsMuted ? 0 : 
+                         (tracks[i].IsSoloedGlobally && !tracks[i].IsSoloActiveOnTrack) ? 0 : 
+                         tracks[i].Volume;
+            
+            filter.Append($"[{i}:a]volume={vol.ToString(Inv)}[a{i}];");
+            activeInputs++;
+        }
+
+        for (int i = 0; i < tracks.Count; i++)
+        {
+            filter.Append($"[a{i}]");
+        }
+        
+        filter.Append($"amix=inputs={activeInputs}:duration=longest[aout]");
+
+        string args = $"-y {sb.ToString().Trim()} -filter_complex \"{filter.ToString()}\" -map \"[aout]\" \"{outPath}\"";
+        
+        await RunAsync(args, ct);
+        return outPath;
+    }
+
+    /// <summary>
     /// Extrae la portada (audio) o un fotograma (vídeo) a una imagen cacheada.
     /// Devuelve la ruta de la imagen o null si no hay portada.
     /// </summary>

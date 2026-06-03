@@ -305,6 +305,12 @@ public sealed partial class LibraryPage : Page
             Process.Start("explorer.exe", $"/select,\"{path}\"");
     }
 
+    private void BtnOpenMixer_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is string folder && Directory.Exists(folder))
+            Frame.Navigate(typeof(StemsMixerPage), folder);
+    }
+
     private void BtnRevealFolder_Click(object sender, RoutedEventArgs e)
     {
         if ((sender as FrameworkElement)?.Tag is string folder && Directory.Exists(folder))
