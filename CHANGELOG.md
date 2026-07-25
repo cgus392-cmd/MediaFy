@@ -5,6 +5,23 @@ Todos los cambios notables de MediaFy se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [1.8.1] - 2026-07-25
+
+> **Actualización obligatoria.** Incluye el motor necesario para que YouTube funcione sin
+> instalar nada más; reemplaza a la 1.8.0, que dependía de tener Node.js en el equipo.
+
+### Añadido
+- **Motor de YouTube incluido (deno):** MediaFy ahora empaqueta su propio runtime de
+  JavaScript. Las descargas y la reproducción funcionan de fábrica, sin exigir Node.js
+  instalado en el equipo (la 1.8.0 lo requería).
+- **Actualizaciones obligatorias:** una versión marcada como obligatoria (marcador
+  `[obligatoria]` en las notas del release) se muestra como un aviso que no se puede
+  descartar, para asegurar que todos los usuarios reciban correcciones críticas.
+
+### Cambiado
+- La sección Ajustes → "Cuenta de YouTube" y el aviso de novedades ahora indican que el
+  motor viene incluido, en lugar de pedir instalar Node.js.
+
 ## [1.8.0] - 2026-07-25
 
 ### Añadido
@@ -39,5 +56,6 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   batería y bajo, con modelos MDX-Net / Demucs / BS-Roformer en la GPU local.
 - Mezclador de stems, monitor de CPU/GPU en vivo, progreso en línea y desinstalación del motor.
 
+[1.8.1]: https://github.com/cgus392-cmd/MediaFy/releases/tag/v1.8.1
 [1.8.0]: https://github.com/cgus392-cmd/MediaFy/releases/tag/v1.8.0
 [1.7.0]: https://github.com/cgus392-cmd/MediaFy/releases/tag/v1.7.0

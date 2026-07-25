@@ -526,7 +526,7 @@
                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                     <FontIcon Glyph="&#xE943;" FontSize="18" VerticalAlignment="Top" Margin="0,2,12,0" />
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock Text="Motor de JavaScript (Node.js)" FontWeight="SemiBold" />
+                        <TextBlock Text="Motor de YouTube (incluido)" FontWeight="SemiBold" />
                         <TextBlock x:Name="NodeStatus" TextWrapping="Wrap" FontSize="12"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                    Text="Comprobando…" />

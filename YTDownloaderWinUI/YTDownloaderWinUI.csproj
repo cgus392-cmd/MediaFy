@@ -16,9 +16,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>MediaFy</AssemblyName>
-    <Version>1.8.0</Version>
-    <FileVersion>1.8.0.0</FileVersion>
-    <AssemblyVersion>1.8.0.0</AssemblyVersion>
+    <Version>1.8.1</Version>
+    <FileVersion>1.8.1.0</FileVersion>
+    <AssemblyVersion>1.8.1.0</AssemblyVersion>
     <ApplicationIcon>Assets\logo.ico</ApplicationIcon>
     <EnableMsixTooling>true</EnableMsixTooling>
     <StartupObject>YTDownloader.Program</StartupObject>
@@ -38,6 +38,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Assets\ffmpeg.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\deno.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Assets\logo.ico">

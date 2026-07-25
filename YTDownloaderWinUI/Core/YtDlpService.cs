@@ -29,19 +29,44 @@ public class YtDlpService
     // ── Autenticación / anti-bot de YouTube (2025+) ─────────────────────────
     // YouTube ahora exige DOS cosas para extraer la mayoría de videos:
     //   1) cookies de una sesión logueada  → supera "Sign in to confirm you're not a bot"
-    //   2) un runtime de JavaScript (Node) → resuelve el reto `nsig` y expone los formatos reales
+    //   2) un runtime de JavaScript          → resuelve el reto `nsig` y expone los formatos reales
     // Sin ambas, ~90% de los videos fallan. Estos flags se anteponen a cada llamada de extracción.
+    //
+    // Runtime JS: MediaFy incluye su propio `deno.exe` en Assets (bundled) para NO depender de que
+    // el usuario tenga Node instalado. Si por algo faltara, se cae a un Node del sistema.
 
-    /// <summary>Ruta a node.exe si está instalado en el sistema (para resolver el nsig). Null si no se encontró.</summary>
-    private static readonly string? NodePath = DetectNode();
+    /// <summary>deno incluido con la app (runtime JS por defecto de yt-dlp).</summary>
+    private static readonly string BundledDenoPath =
+        Path.Combine(AppContext.BaseDirectory, "Assets", "deno.exe");
+
+    /// <summary>node.exe del sistema (solo como respaldo si faltara el deno incluido).</summary>
+    private static readonly string? SystemNodePath = DetectNode();
+
+    /// <summary>Argumento listo para --js-runtimes (deno incluido preferido), o null si no hay runtime.</summary>
+    private static string? JsRuntimeArg()
+    {
+        if (File.Exists(BundledDenoPath)) return $"deno:{BundledDenoPath}";
+        if (SystemNodePath != null)       return $"node:{SystemNodePath}";
+        return null;
+    }
+
+    /// <summary>True si hay un runtime JS disponible (deno incluido o Node del sistema).</summary>
+    public static bool JsRuntimeAvailable => File.Exists(BundledDenoPath) || SystemNodePath != null;
+
+    /// <summary>Nombre legible del runtime JS activo (para mostrar en la UI).</summary>
+    public static string JsRuntimeName =>
+        File.Exists(BundledDenoPath) ? "deno (incluido)"
+        : SystemNodePath != null     ? "Node.js (del sistema)"
+        : "ninguno";
+
+    /// <summary>Compatibilidad con la UI existente: ahora significa "hay runtime JS" (deno incluido cuenta).</summary>
+    public static bool NodeInstalled => JsRuntimeAvailable;
 
     /// <summary>True si MediaFy puede autenticar contra YouTube (hay cookies válidas y runtime JS).</summary>
     public static bool YouTubeAuthReady =>
-        NodePath != null
+        JsRuntimeAvailable
         && !string.IsNullOrWhiteSpace(AppSettings.Current.YouTubeCookiesPath)
         && File.Exists(AppSettings.Current.YouTubeCookiesPath);
-
-    public static bool NodeInstalled => NodePath != null;
 
     private static string? DetectNode()
     {
@@ -69,7 +94,7 @@ public class YtDlpService
 
     /// <summary>
     /// Flags de autenticación que se anteponen a los argumentos de yt-dlp: cookies del usuario
-    /// (si están configuradas) + runtime JS Node (si está instalado). Devuelve "" si no hay nada.
+    /// (si están configuradas) + runtime JS (deno incluido). Devuelve "" si no hay nada.
     /// </summary>
     private static string AuthFlags()
     {
@@ -77,8 +102,9 @@ public class YtDlpService
         string cookies = AppSettings.Current.YouTubeCookiesPath;
         if (!string.IsNullOrWhiteSpace(cookies) && File.Exists(cookies))
             sb.Append($"--cookies \"{cookies}\" ");
-        if (NodePath != null)
-            sb.Append($"--js-runtimes \"node:{NodePath}\" ");
+        var rt = JsRuntimeArg();
+        if (rt != null)
+            sb.Append($"--js-runtimes \"{rt}\" ");
         return sb.ToString();
     }
 

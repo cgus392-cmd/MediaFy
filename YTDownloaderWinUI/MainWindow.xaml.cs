@@ -258,18 +258,28 @@ public sealed partial class MainWindow : Window
 
     private void RefreshUpdateBanner()
     {
-        if (_updateBannerDismissed) { UpdateBanner.Visibility = Visibility.Collapsed; return; }
         var u = App.Updater;
+        bool mandatory = u.Latest?.Mandatory == true;
+
+        // Una actualización obligatoria no se puede descartar: se ignora el "cerrar" previo
+        // y se oculta el botón de cierre.
+        if (_updateBannerDismissed && !mandatory) { UpdateBanner.Visibility = Visibility.Collapsed; return; }
+        UpdateBannerDismiss.Visibility = mandatory ? Visibility.Collapsed : Visibility.Visible;
+
         if (u.State == Core.UpdateState.Available && u.Latest != null)
         {
             UpdateBanner.Visibility = Visibility.Visible;
-            UpdateBannerText.Text = $"MediaFy {u.Latest.Version} está disponible.";
-            UpdateBannerActionText.Text = "Ver actualización";
+            UpdateBannerText.Text = mandatory
+                ? $"Actualización obligatoria: MediaFy {u.Latest.Version}. Debes actualizar para seguir usando la app correctamente."
+                : $"MediaFy {u.Latest.Version} está disponible.";
+            UpdateBannerActionText.Text = mandatory ? "Actualizar ahora" : "Ver actualización";
         }
         else if (u.State == Core.UpdateState.ReadyToInstall && u.Latest != null)
         {
             UpdateBanner.Visibility = Visibility.Visible;
-            UpdateBannerText.Text = $"MediaFy {u.Latest.Version} listo para instalar.";
+            UpdateBannerText.Text = mandatory
+                ? $"Actualización obligatoria lista: MediaFy {u.Latest.Version}."
+                : $"MediaFy {u.Latest.Version} listo para instalar.";
             UpdateBannerActionText.Text = "Instalar ahora";
         }
         else

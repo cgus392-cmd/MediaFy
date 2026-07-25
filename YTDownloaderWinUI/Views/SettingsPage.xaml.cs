@@ -65,9 +65,9 @@ public sealed partial class SettingsPage : Page
             BtnClearCookies.Visibility = Visibility.Collapsed;
         }
 
-        NodeStatus.Text = Core.YtDlpService.NodeInstalled
-            ? "Detectado ✓ — necesario para resolver los formatos de YouTube."
-            : "No detectado. Instala Node.js (nodejs.org) para que las descargas y la reproducción funcionen.";
+        NodeStatus.Text = Core.YtDlpService.JsRuntimeAvailable
+            ? $"Incluido ✓ — {Core.YtDlpService.JsRuntimeName}. No necesitas instalar nada."
+            : "No disponible. Reinstala MediaFy para restaurar el motor incluido.";
     }
 
     private async void OnImportCookies(object sender, RoutedEventArgs e)

@@ -17,6 +17,12 @@ public class UpdateInfo
     public string DownloadUrl { get; set; } = "";
     public long Size { get; set; }
     public string HtmlUrl { get; set; } = "";
+
+    /// <summary>
+    /// Actualización obligatoria: la marca un release cuyas notas incluyen el marcador
+    /// <c>[obligatoria]</c> o <c>[mandatory]</c>. La UI la presenta como no descartable.
+    /// </summary>
+    public bool Mandatory { get; set; }
 }
 
 /// <summary>
@@ -75,6 +81,10 @@ public class UpdateService
                 HtmlUrl = o["html_url"]?.ToString() ?? ""
             };
             info.Version = info.TagName.TrimStart('v', 'V');
+
+            // Obligatoria: marcador [obligatoria] / [mandatory] en las notas del release.
+            info.Mandatory = info.Notes.Contains("[obligatoria]", StringComparison.OrdinalIgnoreCase)
+                          || info.Notes.Contains("[mandatory]", StringComparison.OrdinalIgnoreCase);
 
             // Busca el .exe del instalador en los assets
             if (o["assets"] is JArray assets)

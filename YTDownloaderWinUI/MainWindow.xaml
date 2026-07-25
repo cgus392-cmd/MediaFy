@@ -209,7 +209,7 @@
                                 Background="White" Foreground="Black" Padding="14,4" Margin="0,0,8,0">
                             <TextBlock x:Name="UpdateBannerActionText" Text="Ir a Configuración" FontWeight="SemiBold" />
                         </Button>
-                        <Button Grid.Column="3" Click="UpdateBanner_Dismiss_Click"
+                        <Button Grid.Column="3" x:Name="UpdateBannerDismiss" Click="UpdateBanner_Dismiss_Click"
                                 Background="Transparent" BorderThickness="0" Width="32" Height="32" Padding="0"
                                 ToolTipService.ToolTip="Cerrar">
                             <FontIcon Glyph="&#xE711;" FontSize="11" Foreground="White" />

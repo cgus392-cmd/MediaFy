@@ -59,9 +59,28 @@ public static class WhatsNewDialog
     /// <summary>Devuelve el constructor de notas para la versión dada, o null si no hay notas.</summary>
     private static Action<StackPanel>? NotesBuilder(string version) => version switch
     {
+        "1.8.1" => BuildNotes_1_8_1,
         "1.8.0" => BuildNotes_1_8_0,
         _ => null
     };
+
+    private static void BuildNotes_1_8_1(StackPanel panel)
+    {
+        AddHeading(panel, GlyphInfo, "Ya no necesitas instalar nada");
+        AddParagraph(panel,
+            "MediaFy ahora incluye su propio motor para procesar YouTube — antes hacía falta " +
+            "tener Node.js instalado en el equipo. Con esta actualización, las descargas y la " +
+            "reproducción funcionan de fábrica.");
+        AddParagraph(panel,
+            "Solo sigue siendo necesario importar una vez tu cookies.txt de YouTube para " +
+            "iniciar sesión (por el requisito anti-bot de YouTube).");
+
+        AddStatusBar(panel);
+
+        AddParagraph(panel,
+            "¿Aún no importaste tus cookies? Ajustes → Cuenta de YouTube → Importar. " +
+            "Ahí tienes la guía paso a paso.");
+    }
 
     private static void BuildNotes_1_8_0(StackPanel panel)
     {
@@ -95,38 +114,31 @@ public static class WhatsNewDialog
     {
         string cookies = AppSettings.Current.YouTubeCookiesPath;
         bool hasCookies = !string.IsNullOrWhiteSpace(cookies) && File.Exists(cookies);
-        bool hasNode = YtDlpService.NodeInstalled;
+        bool hasRuntime = YtDlpService.JsRuntimeAvailable; // el motor (deno) viene incluido
 
         string title, message;
         InfoBarSeverity sev;
 
-        if (hasCookies && hasNode)
+        if (hasCookies && hasRuntime)
         {
             sev = InfoBarSeverity.Success;
             title = "Tu MediaFy ya está listo";
-            message = "Detectamos tus cookies de YouTube y el motor necesario. Descargas y " +
+            message = "El motor viene incluido y detectamos tus cookies de YouTube. Descargas y " +
                       "reproducción funcionando — no tienes que hacer nada.";
         }
-        else if (!hasCookies && hasNode)
+        else if (!hasCookies && hasRuntime)
         {
             sev = InfoBarSeverity.Warning;
             title = "Falta un paso: importar tus cookies";
-            message = "Aún no has configurado el cookies.txt. Sin él, la mayoría de videos " +
-                      "fallarán. Ve a Ajustes → Cuenta de YouTube → Importar.";
-        }
-        else if (hasCookies && !hasNode)
-        {
-            sev = InfoBarSeverity.Warning;
-            title = "Falta instalar Node.js";
-            message = "Tus cookies están, pero no se detectó Node.js (necesario para procesar " +
-                      "YouTube). Instálalo desde nodejs.org y reinicia MediaFy.";
+            message = "El motor ya viene incluido, pero aún no has configurado el cookies.txt. " +
+                      "Sin él, la mayoría de videos fallarán. Ve a Ajustes → Cuenta de YouTube → Importar.";
         }
         else
         {
             sev = InfoBarSeverity.Warning;
-            title = "Faltan dos cosas por configurar";
-            message = "Instala Node.js (nodejs.org) e importa tu cookies.txt en " +
-                      "Ajustes → Cuenta de YouTube para activar descargas y reproducción.";
+            title = "Falta el motor incluido";
+            message = "No se encontró el motor de YouTube que trae MediaFy. Reinstala la app para " +
+                      "restaurarlo, y luego importa tu cookies.txt en Ajustes → Cuenta de YouTube.";
         }
 
         panel.Children.Add(new InfoBar
