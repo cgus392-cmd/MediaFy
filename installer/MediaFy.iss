@@ -1,10 +1,10 @@
 ; Instalador de MediaFy by CG — CG LABS
 #define MyAppName "MediaFy"
-#define MyAppVersion "1.7.0"
+#define MyAppVersion "1.8.1"
 #define MyAppPublisher "CG LABS"
 #define MyAppURL "https://github.com/cgus392-cmd"
 #define MyAppExeName "MediaFy.exe"
-#define SourceDir "C:\Users\camil\Documents\New project\YTDownloader\YTDownloaderWinUI\bin\x64\Release\net8.0-windows10.0.19041.0\win-x64"
+#define SourceDir "C:\Users\camil\Documents\CG LABS Projects\MediaFy\YTDownloader\YTDownloaderWinUI\bin\x64\Release\net8.0-windows10.0.19041.0\win-x64"
 
 [Setup]
 AppId={{8F3A2C10-7B4E-4D9A-9C2E-1A2B3C4D5E6F}
@@ -20,7 +20,7 @@ DisableProgramGroupPage=yes
 AllowNoIcons=yes
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
-OutputDir=C:\Users\camil\Documents\New project\YTDownloader\installer\dist
+OutputDir=C:\Users\camil\Documents\CG LABS Projects\MediaFy\YTDownloader\installer\dist
 OutputBaseFilename=MediaFy-Setup-{#MyAppVersion}
 SetupIconFile={#SourceDir}\Assets\logo.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
