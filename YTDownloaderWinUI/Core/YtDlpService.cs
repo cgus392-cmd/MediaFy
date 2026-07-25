@@ -26,6 +26,62 @@ public class YtDlpService
 
     public bool IsAvailable() => File.Exists(_ytDlpPath) && File.Exists(_ffmpegPath);
 
+    // ── Autenticación / anti-bot de YouTube (2025+) ─────────────────────────
+    // YouTube ahora exige DOS cosas para extraer la mayoría de videos:
+    //   1) cookies de una sesión logueada  → supera "Sign in to confirm you're not a bot"
+    //   2) un runtime de JavaScript (Node) → resuelve el reto `nsig` y expone los formatos reales
+    // Sin ambas, ~90% de los videos fallan. Estos flags se anteponen a cada llamada de extracción.
+
+    /// <summary>Ruta a node.exe si está instalado en el sistema (para resolver el nsig). Null si no se encontró.</summary>
+    private static readonly string? NodePath = DetectNode();
+
+    /// <summary>True si MediaFy puede autenticar contra YouTube (hay cookies válidas y runtime JS).</summary>
+    public static bool YouTubeAuthReady =>
+        NodePath != null
+        && !string.IsNullOrWhiteSpace(AppSettings.Current.YouTubeCookiesPath)
+        && File.Exists(AppSettings.Current.YouTubeCookiesPath);
+
+    public static bool NodeInstalled => NodePath != null;
+
+    private static string? DetectNode()
+    {
+        string[] candidates =
+        {
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "nodejs", "node.exe"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "nodejs", "node.exe"),
+        };
+        foreach (var c in candidates)
+            if (File.Exists(c)) return c;
+
+        // Fallback: buscar node.exe en el PATH del sistema.
+        var pathEnv = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+        foreach (var dir in pathEnv.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+        {
+            try
+            {
+                var p = Path.Combine(dir.Trim(), "node.exe");
+                if (File.Exists(p)) return p;
+            }
+            catch { /* entrada de PATH inválida, ignorar */ }
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Flags de autenticación que se anteponen a los argumentos de yt-dlp: cookies del usuario
+    /// (si están configuradas) + runtime JS Node (si está instalado). Devuelve "" si no hay nada.
+    /// </summary>
+    private static string AuthFlags()
+    {
+        var sb = new System.Text.StringBuilder();
+        string cookies = AppSettings.Current.YouTubeCookiesPath;
+        if (!string.IsNullOrWhiteSpace(cookies) && File.Exists(cookies))
+            sb.Append($"--cookies \"{cookies}\" ");
+        if (NodePath != null)
+            sb.Append($"--js-runtimes \"node:{NodePath}\" ");
+        return sb.ToString();
+    }
+
     /// <summary>Ejecuta yt-dlp -U (auto-actualización al arrancar).</summary>
     public async Task SelfUpdateAsync(CancellationToken ct = default)
     {
@@ -63,7 +119,7 @@ public class YtDlpService
         if (IsPlaylistUrl(url))
             return await GetPlaylistInfoAsync(url, ct);
 
-        string json = await RunAsync(_ytDlpPath, $"--dump-json --no-playlist \"{url}\"", ct);
+        string json = await RunAsync(_ytDlpPath, $"{AuthFlags()}--dump-json --no-playlist \"{url}\"", ct);
         var obj = JObject.Parse(json);
 
         var info = new VideoInfo
@@ -100,7 +156,7 @@ public class YtDlpService
     private async Task<VideoInfo> GetPlaylistInfoAsync(string url, CancellationToken ct = default)
     {
         string json = await RunAsync(_ytDlpPath,
-            $"--dump-single-json --flat-playlist \"{url}\"", ct);
+            $"{AuthFlags()}--dump-single-json --flat-playlist \"{url}\"", ct);
         var obj = JObject.Parse(json);
 
         var entries = obj["entries"] as JArray ?? new JArray();
@@ -139,7 +195,7 @@ public class YtDlpService
         string query, int count = 8, CancellationToken ct = default)
     {
         // --flat-playlist: no descarga info completa de cada video → ~2-4s en lugar de ~20s
-        string args = $"--dump-json --flat-playlist \"ytsearch{count}:{query}\"";
+        string args = $"{AuthFlags()}--dump-json --flat-playlist \"ytsearch{count}:{query}\"";
         string output;
         try { output = await RunAsync(_ytDlpPath, args, ct); }
         catch { return new(); }
@@ -181,6 +237,30 @@ public class YtDlpService
         return results;
     }
 
+    /// <summary>
+    /// Resuelve la URL directa del mejor stream de audio de un video (sin descargarlo),
+    /// para reproducir en vivo con el MediaPlayer. La URL apunta al CDN de YouTube y
+    /// caduca en unas horas — se vuelve a resolver al reproducir de nuevo.
+    /// </summary>
+    public async Task<string?> GetStreamUrlAsync(string url, CancellationToken ct = default)
+    {
+        // -f bestaudio/best: mejor pista de audio disponible · -g: solo imprime la URL directa
+        // --no-playlist: si el link trae lista, resolvemos solo el video pedido
+        string args = $"{AuthFlags()}-f \"bestaudio/best\" -g --no-playlist \"{url}\"";
+        string output;
+        try { output = await RunAsync(_ytDlpPath, args, ct); }
+        catch { return null; }
+
+        // yt-dlp puede imprimir varias líneas (audio + video); tomamos la última URL http válida.
+        var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        for (int i = lines.Length - 1; i >= 0; i--)
+        {
+            var t = lines[i].Trim();
+            if (t.StartsWith("http")) return t;
+        }
+        return null;
+    }
+
     private static string FormatViews(long v)
     {
         if (v >= 1_000_000_000) return $"{v / 1_000_000_000.0:F1}B vistas";
@@ -220,7 +300,7 @@ public class YtDlpService
         const string netFlags = "--socket-timeout 30 --retries 10 --fragment-retries 10";
 
         string common =
-            $"{netFlags} " +
+            $"{AuthFlags()}{netFlags} " +
             $"--ffmpeg-location \"{_ffmpegPath}\" " +
             $"--embed-thumbnail --embed-metadata --no-playlist {subFlags} --newline " +
             $"--progress-template \"{ProgressTemplate}\" " +
@@ -346,7 +426,7 @@ public class YtDlpService
         string mp3 = outNoExt + ".mp3";
 
         string query = $"ytsearch1:{track.Artists} {track.Title} audio";
-        string args = $"-x --audio-format mp3 --audio-quality 0 " +
+        string args = $"{AuthFlags()}-x --audio-format mp3 --audio-quality 0 " +
                       $"--ffmpeg-location \"{_ffmpegPath}\" --no-playlist --newline " +
                       $"--progress-template \"{ProgressTemplate}\" " +
                       $"-o \"{outNoExt}.%(ext)s\" \"{query}\"";

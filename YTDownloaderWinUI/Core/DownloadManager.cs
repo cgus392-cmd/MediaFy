@@ -47,6 +47,10 @@ public class DownloadManager
         string query, int count = 8, CancellationToken ct = default)
         => _ytDlp.SearchAsync(query, count, ct);
 
+    /// <summary>Resuelve la URL directa de audio para reproducir en streaming (sin descargar).</summary>
+    public Task<string?> GetStreamUrlAsync(string url, CancellationToken ct = default)
+        => _ytDlp.GetStreamUrlAsync(url, ct);
+
     // ── Spotify ────────────────────────────────────────────────
     public bool SpotifyReady => true; // ya no requiere credenciales
 

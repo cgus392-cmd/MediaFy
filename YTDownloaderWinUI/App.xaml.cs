@@ -81,7 +81,20 @@ public partial class App : Application
     private static async Task ShowFirstRunAsync()
     {
         if (MainWindow is not MainWindow mw) return;
-        var root = mw.Content?.XamlRoot;
+        if (mw.Content is not FrameworkElement rootEl) return;
+
+        // Tras Activate(), el XamlRoot aún no está listo: esperar a que el contenido cargue.
+        // Sin esto, la función salía temprano y nunca se mostraban términos, bienvenida ni novedades.
+        if (rootEl.XamlRoot == null && !rootEl.IsLoaded)
+        {
+            var tcs = new TaskCompletionSource();
+            void OnLoaded(object s, RoutedEventArgs e) { rootEl.Loaded -= OnLoaded; tcs.TrySetResult(); }
+            rootEl.Loaded += OnLoaded;
+            if (rootEl.IsLoaded) { rootEl.Loaded -= OnLoaded; tcs.TrySetResult(); }
+            await tcs.Task;
+        }
+
+        var root = rootEl.XamlRoot;
         if (root == null) return;
         try
         {
@@ -96,6 +109,17 @@ public partial class App : Application
                 var w = new WelcomeWindow();
                 w.Activate();
             }
+
+            // Novedades: se muestra a usuarios que YA usaban la app (no en el primer arranque,
+            // que acaba de ver el tutorial de bienvenida) cuando cambian de versión.
+            string current = Core.UpdateService.CurrentVersion();
+            if (AppSettings.Current.WelcomeShown
+                && AppSettings.Current.LastWhatsNewVersion != current
+                && WhatsNewDialog.HasNotesFor(current))
+            {
+                await WhatsNewDialog.ShowAsync(root, current);
+            }
+            AppSettings.Current.LastWhatsNewVersion = current;
         }
         catch (Exception ex) { Log($"FirstRun: {ex.Message}"); }
     }

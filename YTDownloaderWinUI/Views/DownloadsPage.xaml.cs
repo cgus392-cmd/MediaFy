@@ -280,6 +280,52 @@ public sealed partial class DownloadsPage : Page
         _inputTimer.Start();
     }
 
+    // Reproduce el resultado en streaming (sin descargar): yt-dlp resuelve la URL
+    // directa de audio y el PlaybackService global la suena en la barra de reproducción.
+    private async void BtnPlayResult_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not SearchResultItem item) return;
+
+        // Feedback: spinner en el botón mientras yt-dlp resuelve la URL (~1-2s).
+        var originalContent = btn.Content;
+        btn.IsEnabled = false;
+        btn.Content = new ProgressRing
+        {
+            Width = 16, Height = 16, IsActive = true, Foreground = btn.Foreground
+        };
+        try
+        {
+            string? streamUrl = await _manager.GetStreamUrlAsync(item.Url);
+            if (string.IsNullOrEmpty(streamUrl))
+            {
+                await ShowPlayErrorAsync(item.Title, "No se pudo obtener el audio de este video.");
+                return;
+            }
+            await App.Playback.PlayStreamAsync(streamUrl, item.Title, item.Uploader, item.Thumbnail);
+        }
+        catch (Exception ex)
+        {
+            await ShowPlayErrorAsync(item.Title, ex.Message);
+        }
+        finally
+        {
+            btn.Content = originalContent;
+            btn.IsEnabled = true;
+        }
+    }
+
+    private async Task ShowPlayErrorAsync(string title, string reason)
+    {
+        var dlg = new ContentDialog
+        {
+            Title = "No se pudo reproducir",
+            Content = $"{title}\n\n{reason}",
+            CloseButtonText = "Entendido",
+            XamlRoot = this.XamlRoot
+        };
+        try { await dlg.ShowAsync(); } catch { }
+    }
+
     // ── Helpers de visibilidad ─────────────────────────────────
 
     private void HideAllPanels()

@@ -67,6 +67,27 @@ public class PlaybackService
         Changed?.Invoke();
     }
 
+    /// <summary>
+    /// Reproduce en streaming desde una URL directa (p. ej. la resuelta por yt-dlp),
+    /// sin descargar el archivo. Usa el mismo MediaPlayer/SMTC que la reproducción local:
+    /// el buffering lo maneja Windows a bajo nivel, sin microcortes.
+    /// </summary>
+    public async Task PlayStreamAsync(string streamUrl, string title, string? artist = null, string? coverUrl = null)
+    {
+        _player.Source = MediaSource.CreateFromUri(new Uri(streamUrl));
+        _player.Play();
+
+        _currentPath = null;
+        _currentCover = coverUrl; // puede ser una URL http (miniatura) o una ruta local
+        CurrentTitle = title;
+        CurrentArtist = artist ?? string.Empty;
+        HasMedia = true;
+
+        EnsureSmtc();
+        await UpdateSmtcMetadataAsync();
+        Changed?.Invoke();
+    }
+
     public void Toggle()
     {
         if (!HasMedia) return;
@@ -160,14 +181,22 @@ public class PlaybackService
         u.MusicProperties.Artist = string.IsNullOrEmpty(CurrentArtist) ? "MediaFy by CG" : CurrentArtist;
         try
         {
-            // Portada: la del archivo si la pasaron; si no, el logo de la app
-            string coverPath = !string.IsNullOrEmpty(_currentCover) && File.Exists(_currentCover)
-                ? _currentCover
-                : Path.Combine(AppContext.BaseDirectory, "Assets", "logo.png");
-            if (File.Exists(coverPath))
+            // Portada remota (streaming): miniatura por URL → SMTC la carga directamente.
+            if (!string.IsNullOrEmpty(_currentCover) && _currentCover.StartsWith("http"))
             {
-                var coverFile = await StorageFile.GetFileFromPathAsync(coverPath);
-                u.Thumbnail = RandomAccessStreamReference.CreateFromFile(coverFile);
+                u.Thumbnail = RandomAccessStreamReference.CreateFromUri(new Uri(_currentCover));
+            }
+            else
+            {
+                // Portada local: la del archivo si la pasaron; si no, el logo de la app
+                string coverPath = !string.IsNullOrEmpty(_currentCover) && File.Exists(_currentCover)
+                    ? _currentCover
+                    : Path.Combine(AppContext.BaseDirectory, "Assets", "logo.png");
+                if (File.Exists(coverPath))
+                {
+                    var coverFile = await StorageFile.GetFileFromPathAsync(coverPath);
+                    u.Thumbnail = RandomAccessStreamReference.CreateFromFile(coverFile);
+                }
             }
         }
         catch { }

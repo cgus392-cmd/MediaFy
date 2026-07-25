@@ -484,6 +484,76 @@
                 </Grid>
             </Border>
 
+            <!-- ══ Cuenta de YouTube (autenticación) ══ -->
+            <TextBlock Text="Cuenta de YouTube" FontSize="18" FontWeight="SemiBold" Margin="2,10,0,0" />
+            <TextBlock Text="Desde 2025, YouTube exige una sesión iniciada para descargar o reproducir la mayoría de videos. Importa un cookies.txt de tu navegador (con sesión de YouTube) para autenticar MediaFy."
+                       FontSize="13" TextWrapping="Wrap"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="2,-6,0,2" />
+
+            <!-- Cookies de sesión -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="16">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE72E;" FontSize="18" VerticalAlignment="Top" Margin="0,2,12,0" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Cookies de sesión (cookies.txt)" FontWeight="SemiBold" />
+                        <TextBlock x:Name="CookiesStatus" TextWrapping="Wrap" FontSize="12"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   Text="Sin configurar." />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button x:Name="BtnClearCookies" Click="OnClearCookies"
+                                ToolTipService.ToolTip="Quitar cookies" Visibility="Collapsed">
+                            <FontIcon Glyph="&#xE74D;" FontSize="13" />
+                        </Button>
+                        <Button Click="OnImportCookies" Style="{StaticResource AccentButtonStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE8E5;" FontSize="13" />
+                                <TextBlock Text="Importar" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Estado del runtime JS (Node) -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="16">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xE943;" FontSize="18" VerticalAlignment="Top" Margin="0,2,12,0" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Motor de JavaScript (Node.js)" FontWeight="SemiBold" />
+                        <TextBlock x:Name="NodeStatus" TextWrapping="Wrap" FontSize="12"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   Text="Comprobando…" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Cómo exportar cookies -->
+            <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                <Expander.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <FontIcon Glyph="&#xE897;" FontSize="15" />
+                        <TextBlock Text="¿Cómo exporto mi cookies.txt?" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Expander.Header>
+                <StackPanel Spacing="6" Padding="4,4,4,8">
+                    <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Text="1. Instala la extensión &quot;Get cookies.txt LOCALLY&quot; en tu navegador (es open-source y no envía tus datos)." />
+                    <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Text="2. Abre youtube.com con tu cuenta iniciada." />
+                    <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Text="3. Pulsa el ícono de la extensión → Export. Se descarga un cookies.txt." />
+                    <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Text="4. Pulsa &quot;Importar&quot; aquí y selecciona ese archivo. Las cookies se guardan solo en tu equipo." />
+                </StackPanel>
+            </Expander>
+
             <!-- ══ Plataformas ══ -->
             <TextBlock Text="Plataformas" FontSize="18" FontWeight="SemiBold" Margin="2,10,0,0" />
             <TextBlock Text="Activa las fuentes desde las que quieres descargar. Cada una se habilita con su interruptor."

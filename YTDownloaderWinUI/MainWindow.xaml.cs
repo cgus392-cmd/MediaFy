@@ -85,6 +85,13 @@ public sealed partial class MainWindow : Window
     /// <summary>Aplica el telón de fondo a toda la ventana en vivo.</summary>
     public void ApplyBackdrop(BackdropKind kind) => _backdrop?.Apply(kind);
 
+    /// <summary>Navega a la página de Configuración (usado por el anuncio de novedades).</summary>
+    public void OpenSettings()
+    {
+        ContentFrame.Navigate(typeof(SettingsPage));
+        Nav.SelectedItem = Nav.SettingsItem;
+    }
+
     private void Nav_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
         if (args.IsSettingsSelected) { ContentFrame.Navigate(typeof(SettingsPage)); return; }

@@ -64,6 +64,18 @@ public partial class AppSettings : ObservableObject
     /// <summary>Forma del mini-reproductor flotante: "Bar" (barra) o "Square" (cuadrado).</summary>
     [ObservableProperty] private string _miniPlayerMode = "Bar";
 
+    /// <summary>
+    /// Ruta al cookies.txt (formato Netscape) de una sesión de YouTube. Necesario desde 2025
+    /// para superar el anti-bot ("Sign in to confirm you're not a bot") en descargas y streaming.
+    /// </summary>
+    [ObservableProperty] private string _youTubeCookiesPath = string.Empty;
+
+    /// <summary>Ubicación gestionada donde MediaFy guarda una copia estable del cookies.txt importado.</summary>
+    public static string ManagedCookiesPath => Path.Combine(SettingsDir, "youtube_cookies.txt");
+
+    /// <summary>Última versión cuyo anuncio de novedades ya se mostró (para no repetirlo cada arranque).</summary>
+    [ObservableProperty] private string _lastWhatsNewVersion = string.Empty;
+
     private static Dictionary<string, bool> DefaultPlatforms() => new()
     {
         [nameof(Platform.YouTube)]     = true,

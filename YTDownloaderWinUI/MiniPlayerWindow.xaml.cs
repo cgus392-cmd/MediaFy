@@ -84,7 +84,7 @@ public sealed partial class MiniPlayerWindow : Window
         MiniPlayIcon.Glyph = playGlyph; SqPlayIcon.Glyph = playGlyph;
 
         string? cover = _pb.CurrentCover;
-        if (!string.IsNullOrEmpty(cover) && File.Exists(cover))
+        if (!string.IsNullOrEmpty(cover) && (File.Exists(cover) || cover.StartsWith("http")))
         {
             var bmp = new BitmapImage(new Uri(cover));
             MiniCover.Source = bmp; SqCover.Source = bmp;

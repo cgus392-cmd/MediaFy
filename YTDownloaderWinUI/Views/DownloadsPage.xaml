@@ -104,6 +104,7 @@
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <!-- Miniatura -->
                                 <Border Width="88" Height="50" CornerRadius="4" VerticalAlignment="Center"
@@ -123,8 +124,16 @@
                                                    Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                                     </StackPanel>
                                 </StackPanel>
+                                <!-- Reproducir en streaming (no descarga) -->
+                                <Button Grid.Column="2" Width="36" Height="36" Padding="0"
+                                        VerticalAlignment="Center" CornerRadius="18"
+                                        Style="{StaticResource AccentButtonStyle}"
+                                        Click="BtnPlayResult_Click" Tag="{x:Bind}"
+                                        ToolTipService.ToolTip="Reproducir en streaming">
+                                    <FontIcon Glyph="&#xE768;" FontSize="14" />
+                                </Button>
                                 <!-- Duración -->
-                                <Border Grid.Column="2" CornerRadius="4" Padding="8,3" VerticalAlignment="Center"
+                                <Border Grid.Column="3" CornerRadius="4" Padding="8,3" VerticalAlignment="Center"
                                         Background="{ThemeResource ControlFillColorSecondaryBrush}">
                                     <TextBlock Text="{x:Bind Duration}" FontSize="11" />
                                 </Border>

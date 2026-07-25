@@ -44,6 +44,69 @@ public sealed partial class SettingsPage : Page
         App.Updater.StateChanged += OnUpdateState;
         App.Updater.DownloadProgress += p => DispatcherQueue.TryEnqueue(() => UpdateProgress.Value = p);
         RefreshUpdateUI();
+
+        RefreshYouTubeAuthUI();
+    }
+
+    // ── Cuenta de YouTube (cookies + runtime JS) ────────────────────────────
+    private void RefreshYouTubeAuthUI()
+    {
+        string cookies = Core.AppSettings.Current.YouTubeCookiesPath;
+        bool hasCookies = !string.IsNullOrWhiteSpace(cookies) && File.Exists(cookies);
+        if (hasCookies)
+        {
+            var when = File.GetLastWriteTime(cookies).ToString("dd/MM/yyyy HH:mm");
+            CookiesStatus.Text = $"Configuradas ✓ · importadas el {when}. Si expiran, vuelve a importar.";
+            BtnClearCookies.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            CookiesStatus.Text = "Sin configurar. Sin cookies, la mayoría de videos fallan (anti-bot de YouTube).";
+            BtnClearCookies.Visibility = Visibility.Collapsed;
+        }
+
+        NodeStatus.Text = Core.YtDlpService.NodeInstalled
+            ? "Detectado ✓ — necesario para resolver los formatos de YouTube."
+            : "No detectado. Instala Node.js (nodejs.org) para que las descargas y la reproducción funcionen.";
+    }
+
+    private async void OnImportCookies(object sender, RoutedEventArgs e)
+    {
+        var picker = new FileOpenPicker();
+        picker.FileTypeFilter.Add(".txt");
+        var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+
+        var file = await picker.PickSingleFileAsync();
+        if (file is null) return;
+
+        try
+        {
+            string dst = Core.AppSettings.ManagedCookiesPath;
+            Directory.CreateDirectory(Path.GetDirectoryName(dst)!);
+            File.Copy(file.Path, dst, overwrite: true);
+            Core.AppSettings.Current.YouTubeCookiesPath = dst; // dispara guardado
+            RefreshYouTubeAuthUI();
+        }
+        catch (Exception ex)
+        {
+            var dlg = new ContentDialog
+            {
+                Title = "No se pudo importar",
+                Content = ex.Message,
+                CloseButtonText = "Entendido",
+                XamlRoot = this.XamlRoot
+            };
+            try { await dlg.ShowAsync(); } catch { }
+        }
+    }
+
+    private void OnClearCookies(object sender, RoutedEventArgs e)
+    {
+        try { if (File.Exists(Core.AppSettings.ManagedCookiesPath)) File.Delete(Core.AppSettings.ManagedCookiesPath); }
+        catch { /* archivo bloqueado; ignorar */ }
+        Core.AppSettings.Current.YouTubeCookiesPath = string.Empty;
+        RefreshYouTubeAuthUI();
     }
 
     private void OnUpdateState(Core.UpdateState s) => DispatcherQueue.TryEnqueue(RefreshUpdateUI);
