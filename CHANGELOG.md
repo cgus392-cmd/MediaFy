@@ -5,6 +5,21 @@ Todos los cambios notables de MediaFy se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [1.8.2] - 2026-07-26
+
+> **Actualización obligatoria.** Corrige un fallo del actualizador integrado que hacía
+> crashear la app y el instalador al aplicar una actualización.
+
+### Corregido
+- **Crash del actualizador integrado:** al pulsar "Instalar ahora", la app y el instalador
+  se cerraban abruptamente. Causa: el instalador se lanzaba como proceso hijo de MediaFy y
+  el cierre por árbol (`taskkill /T` y `Kill(entireProcessTree)`) lo mataba a sí mismo.
+  - **App:** el instalador ahora se lanza desacoplado del árbol de procesos de MediaFy.
+  - **Instalador:** cierra la app y sus auxiliares (yt-dlp, ffmpeg, deno) **por nombre**,
+    nunca por árbol, para no matarse a sí mismo — así incluso las instalaciones lanzadas
+    por versiones anteriores (1.8.1) se actualizan sin crashear.
+- El instalador ahora **relanza MediaFy automáticamente** tras una actualización silenciosa.
+
 ## [1.8.1] - 2026-07-25
 
 > **Actualización obligatoria.** Incluye el motor necesario para que YouTube funcione sin
@@ -56,6 +71,7 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   batería y bajo, con modelos MDX-Net / Demucs / BS-Roformer en la GPU local.
 - Mezclador de stems, monitor de CPU/GPU en vivo, progreso en línea y desinstalación del motor.
 
+[1.8.2]: https://github.com/cgus392-cmd/MediaFy/releases/tag/v1.8.2
 [1.8.1]: https://github.com/cgus392-cmd/MediaFy/releases/tag/v1.8.1
 [1.8.0]: https://github.com/cgus392-cmd/MediaFy/releases/tag/v1.8.0
 [1.7.0]: https://github.com/cgus392-cmd/MediaFy/releases/tag/v1.7.0

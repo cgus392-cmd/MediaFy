@@ -59,10 +59,23 @@ public static class WhatsNewDialog
     /// <summary>Devuelve el constructor de notas para la versión dada, o null si no hay notas.</summary>
     private static Action<StackPanel>? NotesBuilder(string version) => version switch
     {
+        "1.8.2" => BuildNotes_1_8_2,
         "1.8.1" => BuildNotes_1_8_1,
         "1.8.0" => BuildNotes_1_8_0,
         _ => null
     };
+
+    private static void BuildNotes_1_8_2(StackPanel panel)
+    {
+        AddHeading(panel, GlyphInfo, "Actualizador arreglado");
+        AddParagraph(panel,
+            "Corregimos un fallo que hacía cerrarse la app y el instalador al aplicar una " +
+            "actualización desde el propio programa. Ahora el proceso se completa sin " +
+            "interrupciones y MediaFy se reabre solo al terminar.");
+        AddParagraph(panel,
+            "El resto sigue igual: si ya importaste tu cookies.txt, no tienes que hacer nada.");
+        AddStatusBar(panel);
+    }
 
     private static void BuildNotes_1_8_1(StackPanel panel)
     {

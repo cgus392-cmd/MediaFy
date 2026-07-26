@@ -1,6 +1,6 @@
 ; Instalador de MediaFy by CG — CG LABS
 #define MyAppName "MediaFy"
-#define MyAppVersion "1.8.1"
+#define MyAppVersion "1.8.2"
 #define MyAppPublisher "CG LABS"
 #define MyAppURL "https://github.com/cgus392-cmd"
 #define MyAppExeName "MediaFy.exe"
@@ -47,17 +47,33 @@ Name: "{group}\{cm:UninstallProgram,MediaFy}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\MediaFy"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
+; Instalación normal (con asistente): checkbox "ejecutar MediaFy" al final.
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,MediaFy}"; Flags: nowait postinstall skipifsilent
+; Actualización silenciosa (desde el auto-updater): relanza la app automáticamente al terminar,
+; como el usuario original (sin heredar elevación si el instalador se elevó).
+Filename: "{app}\{#MyAppExeName}"; Flags: nowait skipifnotsilent runasoriginaluser
 
 [Code]
-// Cierra cualquier instancia previa de MediaFy (y sus procesos hijos) antes de copiar
+// Cierra cualquier instancia previa de MediaFy y sus procesos auxiliares antes de copiar
 // archivos, para que la actualización no falle con "deshaciendo cambios".
+//
+// IMPORTANTE: se mata POR NOMBRE (/IM), nunca con /T (árbol). Si usáramos /T sobre
+// MediaFy.exe y este instalador fue lanzado como proceso hijo de la app (como hacían
+// las versiones <= 1.8.1), el /T mataría también a este instalador → crash de ambos.
+// Matando por nombre, el instalador (nombre distinto) nunca cae en la redada.
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   ResultCode: Integer;
+  Exes: array[0..3] of String;
+  I: Integer;
 begin
-  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /T /IM {#MyAppExeName}', '',
-       SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Sleep(700);
+  Exes[0] := '{#MyAppExeName}';  // MediaFy.exe (bloquea el ejecutable principal)
+  Exes[1] := 'yt-dlp.exe';       // auxiliares que pueden bloquear archivos en Assets
+  Exes[2] := 'ffmpeg.exe';
+  Exes[3] := 'deno.exe';
+  for I := 0 to 3 do
+    Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM ' + Exes[I], '',
+         SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Sleep(1000);
   Result := '';
 end;

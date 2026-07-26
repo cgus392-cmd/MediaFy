@@ -165,14 +165,18 @@ public class UpdateService
         if (DownloadedInstallerPath == null || !File.Exists(DownloadedInstallerPath)) return false;
         try
         {
+            // CRÍTICO: el instalador se lanza DESACOPLADO del árbol de procesos de MediaFy.
+            // Si fuera proceso hijo, el `taskkill /F /T /IM MediaFy.exe` del propio instalador
+            // (y el Kill(entireProcessTree:true) al cerrar la app) matarían también al instalador
+            // por estar dentro del mismo árbol → crash de la app Y del instalador a la vez.
+            // `cmd /c start` lo crea como proceso independiente, fuera de nuestro árbol.
+            // /SILENT: ventana de progreso mínima · /SUPPRESSMSGBOXES · /NORESTART.
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
             {
-                FileName = DownloadedInstallerPath,
-                // /SILENT muestra una pequeña ventana de progreso. /VERYSILENT no muestra nada.
-                // Mantenemos /SILENT para que el user vea que algo pasa, y al terminar relanza solo.
-                Arguments = "/SILENT /SUPPRESSMSGBOXES /NORESTART",
-                UseShellExecute = true,
-                Verb = "open"
+                FileName = "cmd.exe",
+                Arguments = $"/c start \"\" \"{DownloadedInstallerPath}\" /SILENT /SUPPRESSMSGBOXES /NORESTART",
+                UseShellExecute = false,
+                CreateNoWindow = true
             });
             return true;
         }
