@@ -65,6 +65,12 @@ public partial class AppSettings : ObservableObject
     [ObservableProperty] private string _miniPlayerMode = "Bar";
 
     /// <summary>
+    /// Segundos de fundido entre canciones (0 = desactivado). Al reproducir una cola, la canción
+    /// que sale baja el volumen y la que entra sube ("entrada épica"), sin superponer audio.
+    /// </summary>
+    [ObservableProperty] private double _crossfadeSeconds = 0;
+
+    /// <summary>
     /// Ruta al cookies.txt (formato Netscape) de una sesión de YouTube. Necesario desde 2025
     /// para superar el anti-bot ("Sign in to confirm you're not a bot") en descargas y streaming.
     /// </summary>

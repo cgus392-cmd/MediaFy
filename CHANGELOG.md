@@ -5,6 +5,20 @@ Todos los cambios notables de MediaFy se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [Sin publicar]
+
+### Añadido
+- **Mini-reproductor rediseñado (liquid glass):** tarjeta de vidrio esmerilado con la
+  carátula del álbum difuminada de fondo, y **barra de progreso/timeline de la canción**
+  (clic o arrastre para saltar) con tiempos transcurrido/total. Reemplaza el medidor de
+  volumen (VU) que antes ocupaba ese espacio.
+- **Cola de reproducción + auto-siguiente:** al reproducir una canción de la Biblioteca se
+  arma la cola con toda la carpeta y la reproducción avanza sola a la siguiente. Botones
+  anterior/siguiente en la barra de reproducción y en las teclas multimedia (SMTC).
+- **Fundido entre canciones (crossfade tipo transición):** la canción que sale baja el
+  volumen y la que entra sube ("entrada épica"), sin superponer audio. Configurable en
+  Ajustes → "Fundido entre canciones" (0–12 s; 0 = desactivado).
+
 ## [1.8.2] - 2026-07-26
 
 > **Actualización obligatoria.** Corrige un fallo del actualizador integrado que hacía

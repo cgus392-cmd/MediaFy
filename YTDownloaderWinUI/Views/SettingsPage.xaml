@@ -272,6 +272,28 @@
                 </Grid>
             </Border>
 
+            <!-- Fundido entre canciones (crossfade tipo transición) -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="16">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon Glyph="&#xEC4F;" FontSize="18" VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Fundido entre canciones" FontWeight="SemiBold" />
+                        <TextBlock x:Name="CrossfadeDesc" Text="Desactivado"
+                                   FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                    <Slider Grid.Column="2" x:Name="CrossfadeSlider" Width="180" Minimum="0" Maximum="12"
+                            StepFrequency="1" TickFrequency="1" VerticalAlignment="Center"
+                            ValueChanged="OnCrossfadeChanged" />
+                </Grid>
+            </Border>
+
             <!-- Guardado de corte -->
             <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"

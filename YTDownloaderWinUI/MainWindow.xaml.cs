@@ -343,8 +343,37 @@ public sealed partial class MainWindow : Window
         GpMiniName.Text = App.Playback.CurrentTitle;
         UpdatePlayIcon();
         UpdatePlayersVisibility();
+        UpdateMiniCover();
+        GpPrev.IsEnabled = App.Playback.HasPrev;
+        GpNext.IsEnabled = App.Playback.HasNext;
         if (App.Playback.HasMedia && !_vuTimer.IsEnabled) _vuTimer.Start();
     });
+
+    // Carátula difuminada de fondo del mini-reproductor (frosted glass sobre la portada).
+    private string? _miniCoverShown;
+    private void UpdateMiniCover()
+    {
+        string? cover = App.Playback.CurrentCover;
+        if (cover == _miniCoverShown) return; // ya cargada, evitar recrear el bitmap
+        _miniCoverShown = cover;
+
+        bool ok = !string.IsNullOrEmpty(cover) &&
+                  (cover.StartsWith("http") || System.IO.File.Exists(cover));
+        if (ok)
+        {
+            try
+            {
+                MiniCardCover.Source = new BitmapImage(new Uri(cover!));
+                MiniCardCover.Opacity = 1;
+                MiniCoverFrost.Visibility = Visibility.Visible;
+                return;
+            }
+            catch { /* url/imagen inválida → caer al vidrio translúcido */ }
+        }
+        MiniCardCover.Source = null;
+        MiniCardCover.Opacity = 0;
+        MiniCoverFrost.Visibility = Visibility.Collapsed;
+    }
 
     private void UpdatePlayIcon()
     {
@@ -371,6 +400,8 @@ public sealed partial class MainWindow : Window
     }
 
     private void Gp_PlayPause_Click(object sender, RoutedEventArgs e) => App.Playback.Toggle();
+    private void Gp_Prev_Click(object sender, RoutedEventArgs e) => App.Playback.Previous();
+    private void Gp_Next_Click(object sender, RoutedEventArgs e) => App.Playback.Next();
 
     private void Gp_Volume_Changed(object sender, RangeBaseValueChangedEventArgs e)
     {
@@ -402,12 +433,73 @@ public sealed partial class MainWindow : Window
         App.Playback.TickLevels();
         _vuL = App.Playback.LevelLeft;
         _vuR = App.Playback.LevelRight;
-        SetBar(GpVuLeft, _vuL);
-        SetBar(GpVuRight, _vuR);
         SetBar(GpVuLeftBig, _vuL);
         SetBar(GpVuRightBig, _vuR);
+        App.Playback.TickFade();   // envolvente de fundido entre canciones
+        UpdateSeekUI();
         // Detener el VU cuando ya no hay audio y las barras decayeron (ahorra CPU en reposo)
         if (!App.Playback.HasMedia && _vuL < 0.01 && _vuR < 0.01) _vuTimer.Stop();
+    }
+
+    // ── Timeline de la canción (barra de progreso seekable del mini-reproductor) ──
+    private bool _seeking;
+
+    private void UpdateSeekUI()
+    {
+        if (_seeking) return; // no pisar la barra mientras el usuario arrastra
+        var s = App.Playback.Player?.PlaybackSession;
+        double pos = s?.Position.TotalSeconds ?? 0;
+        double dur = s?.NaturalDuration.TotalSeconds ?? 0;
+        double frac = dur > 0 ? Math.Clamp(pos / dur, 0, 1) : 0;
+        SetSeekFill(MiniSeekFill, frac);
+        MiniElapsed.Text = FmtTime(pos);
+        MiniTotal.Text = FmtTime(dur);
+    }
+
+    private static void SetSeekFill(FrameworkElement fill, double frac)
+    {
+        if (fill.Parent is FrameworkElement host && host.ActualWidth > 0)
+            fill.Width = Math.Clamp(frac, 0, 1) * host.ActualWidth;
+    }
+
+    private static string FmtTime(double seconds)
+    {
+        if (seconds <= 0 || double.IsNaN(seconds)) return "0:00";
+        var t = TimeSpan.FromSeconds(seconds);
+        return t.TotalHours >= 1 ? $"{(int)t.TotalHours}:{t.Minutes:00}:{t.Seconds:00}"
+                                 : $"{t.Minutes}:{t.Seconds:00}";
+    }
+
+    private void Seek_PointerPressed(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement track) return;
+        _seeking = true;
+        track.CapturePointer(e.Pointer);
+        SeekToPointer(track, e);
+    }
+
+    private void Seek_PointerMoved(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (!_seeking || sender is not FrameworkElement track) return;
+        SeekToPointer(track, e);
+    }
+
+    private void Seek_PointerReleased(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (sender is FrameworkElement track) track.ReleasePointerCapture(e.Pointer);
+        _seeking = false;
+    }
+
+    private void SeekToPointer(FrameworkElement track, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        double w = track.ActualWidth;
+        if (w <= 0 || !App.Playback.HasMedia) return;
+        double x = e.GetCurrentPoint(track).Position.X;
+        double frac = Math.Clamp(x / w, 0, 1);
+        var s = App.Playback.Player?.PlaybackSession;
+        double dur = s?.NaturalDuration.TotalSeconds ?? 0;
+        if (dur > 0) App.Playback.Seek(TimeSpan.FromSeconds(frac * dur));
+        SetSeekFill(MiniSeekFill, frac); // feedback visual inmediato
     }
 
     private static void SetBar(FrameworkElement bar, double level)

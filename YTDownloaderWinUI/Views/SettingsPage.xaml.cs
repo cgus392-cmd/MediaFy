@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Windows.Storage.Pickers;
 
 namespace YTDownloader.Views;
@@ -46,6 +47,23 @@ public sealed partial class SettingsPage : Page
         RefreshUpdateUI();
 
         RefreshYouTubeAuthUI();
+
+        CrossfadeSlider.Value = Core.AppSettings.Current.CrossfadeSeconds;
+        UpdateCrossfadeDesc(Core.AppSettings.Current.CrossfadeSeconds);
+    }
+
+    private void OnCrossfadeChanged(object sender, RangeBaseValueChangedEventArgs e)
+    {
+        Core.AppSettings.Current.CrossfadeSeconds = e.NewValue;
+        UpdateCrossfadeDesc(e.NewValue);
+    }
+
+    private void UpdateCrossfadeDesc(double seconds)
+    {
+        if (CrossfadeDesc is null) return;
+        CrossfadeDesc.Text = seconds < 0.5
+            ? "Desactivado — las canciones se relevan sin fundido."
+            : $"{(int)Math.Round(seconds)} s de fundido al entrar y salir cada canción.";
     }
 
     // ── Cuenta de YouTube (cookies + runtime JS) ────────────────────────────

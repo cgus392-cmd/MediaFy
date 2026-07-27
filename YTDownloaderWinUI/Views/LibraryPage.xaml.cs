@@ -247,9 +247,24 @@ public sealed partial class LibraryPage : Page
 
         if (mode == Core.PlayerMode.Integrated)
         {
-            // Pasa portada del archivo (si ya estaba cacheada) para SMTC
-            var lf = AllFiles().FirstOrDefault(f => f.FullPath == path);
-            await App.Playback.PlayAsync(path, Path.GetFileNameWithoutExtension(path), null, lf?.CoverPath);
+            // Arma la cola con las canciones (audio) de la vista actual, en orden, empezando en la elegida.
+            // Así funcionan el auto-siguiente y el fundido entre canciones.
+            var audio = AllFiles().Where(f => f.IsAudio).ToList();
+            int idx = audio.FindIndex(f => f.FullPath == path);
+            if (idx >= 0)
+            {
+                var items = audio
+                    .Select(f => new Core.QueueItem(
+                        f.FullPath, false, Path.GetFileNameWithoutExtension(f.FullPath), null, f.CoverPath))
+                    .ToList();
+                await App.Playback.PlayQueueAsync(items, idx);
+            }
+            else
+            {
+                // No es audio (p. ej. un video) → reproducir solo ese archivo.
+                var lf = AllFiles().FirstOrDefault(f => f.FullPath == path);
+                await App.Playback.PlayAsync(path, Path.GetFileNameWithoutExtension(path), null, lf?.CoverPath);
+            }
         }
         else
             OpenWithWindows(path);
