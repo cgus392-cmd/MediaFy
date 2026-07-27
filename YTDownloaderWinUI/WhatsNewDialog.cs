@@ -59,11 +59,28 @@ public static class WhatsNewDialog
     /// <summary>Devuelve el constructor de notas para la versión dada, o null si no hay notas.</summary>
     private static Action<StackPanel>? NotesBuilder(string version) => version switch
     {
+        "1.9.0" => BuildNotes_1_9_0,
         "1.8.2" => BuildNotes_1_8_2,
         "1.8.1" => BuildNotes_1_8_1,
         "1.8.0" => BuildNotes_1_8_0,
         _ => null
     };
+
+    private static void BuildNotes_1_9_0(StackPanel panel)
+    {
+        AddHeading(panel, GlyphPlay, "Reproductor renovado (liquid glass)");
+        AddParagraph(panel,
+            "El mini-reproductor ahora luce la carátula del álbum difuminada de fondo, con un " +
+            "acabado tipo vidrio. Y por fin muestra la barra de progreso de la canción: haz clic " +
+            "o arrastra sobre ella para saltar a cualquier punto.");
+
+        AddHeading(panel, GlyphInfo, "Cola y fundido entre canciones");
+        AddParagraph(panel,
+            "Al reproducir una canción de la Biblioteca se arma una cola con la carpeta y la " +
+            "reproducción avanza sola a la siguiente (con botones anterior/siguiente y teclas " +
+            "multimedia). Puedes activar un fundido suave entre canciones en " +
+            "Ajustes → Fundido entre canciones.");
+    }
 
     private static void BuildNotes_1_8_2(StackPanel panel)
     {

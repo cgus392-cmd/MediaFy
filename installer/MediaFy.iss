@@ -1,6 +1,6 @@
 ; Instalador de MediaFy by CG — CG LABS
 #define MyAppName "MediaFy"
-#define MyAppVersion "1.8.2"
+#define MyAppVersion "1.9.0"
 #define MyAppPublisher "CG LABS"
 #define MyAppURL "https://github.com/cgus392-cmd"
 #define MyAppExeName "MediaFy.exe"

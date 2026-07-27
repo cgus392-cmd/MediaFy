@@ -5,7 +5,7 @@ Todos los cambios notables de MediaFy se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
-## [Sin publicar]
+## [1.9.0] - 2026-07-26
 
 ### Añadido
 - **Mini-reproductor rediseñado (liquid glass):** tarjeta de vidrio esmerilado con la
@@ -85,6 +85,7 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   batería y bajo, con modelos MDX-Net / Demucs / BS-Roformer en la GPU local.
 - Mezclador de stems, monitor de CPU/GPU en vivo, progreso en línea y desinstalación del motor.
 
+[1.9.0]: https://github.com/cgus392-cmd/MediaFy/releases/tag/v1.9.0
 [1.8.2]: https://github.com/cgus392-cmd/MediaFy/releases/tag/v1.8.2
 [1.8.1]: https://github.com/cgus392-cmd/MediaFy/releases/tag/v1.8.1
 [1.8.0]: https://github.com/cgus392-cmd/MediaFy/releases/tag/v1.8.0
