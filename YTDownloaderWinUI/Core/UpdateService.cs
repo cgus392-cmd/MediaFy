@@ -65,13 +65,31 @@ public class UpdateService
     public string? DownloadedInstallerPath { get; private set; }
     public string LastError { get; private set; } = "";
 
-    /// <summary>Consulta GitHub y compara versiones. No descarga aún.</summary>
-    public async Task<bool> CheckAsync(CancellationToken ct = default)
+    /// <summary>
+    /// Consulta GitHub y compara versiones. No descarga aún.
+    /// <paramref name="manual"/>=true cuando lo dispara el usuario (botón "Buscar"): solo entonces
+    /// se muestran errores. En el chequeo automático de arranque, los fallos (403/rate-limit, red)
+    /// se silencian para no alarmar con algo que no es culpa de la app.
+    /// </summary>
+    public async Task<bool> CheckAsync(bool manual = false, CancellationToken ct = default)
     {
+        AppSettings.Current.LastUpdateCheckUtc = DateTime.UtcNow; // registra el intento (para el throttle)
         State = UpdateState.Checking;
         try
         {
-            string json = await Http.GetStringAsync(ApiLatest, ct);
+            using var resp = await Http.GetAsync(ApiLatest, ct);
+
+            // Límite de la API pública de GitHub (60/hora por IP sin token). No es un fallo de la app.
+            if (resp.StatusCode == System.Net.HttpStatusCode.Forbidden ||
+                (int)resp.StatusCode == 429)
+            {
+                if (manual) { LastError = RateLimitMessage(resp); State = UpdateState.Error; }
+                else        { State = UpdateState.Idle; } // arranque: fallar en silencio
+                return false;
+            }
+            resp.EnsureSuccessStatusCode();
+
+            string json = await resp.Content.ReadAsStringAsync(ct);
             var o = JObject.Parse(json);
 
             var info = new UpdateInfo
@@ -113,10 +131,37 @@ public class UpdateService
         }
         catch (Exception ex)
         {
-            LastError = ex.Message;
-            State = UpdateState.Error;
+            // Red caída u otro error: solo molestar si el usuario lo pidió (manual).
+            if (manual)
+            {
+                LastError = "No se pudo comprobar ahora. Revisa tu conexión e inténtalo de nuevo.";
+                State = UpdateState.Error;
+            }
+            else State = UpdateState.Idle;
+            System.Diagnostics.Debug.WriteLine($"Update check: {ex.Message}");
             return false;
         }
+    }
+
+    /// <summary>Mensaje amable con el tiempo estimado de reseteo del límite de GitHub.</summary>
+    private static string RateLimitMessage(HttpResponseMessage resp)
+    {
+        try
+        {
+            if (resp.Headers.TryGetValues("X-RateLimit-Reset", out var vals))
+            {
+                string? first = null;
+                foreach (var v in vals) { first = v; break; }
+                if (long.TryParse(first, out var reset))
+                {
+                    var when = DateTimeOffset.FromUnixTimeSeconds(reset);
+                    int mins = Math.Max(1, (int)Math.Ceiling((when - DateTimeOffset.UtcNow).TotalMinutes));
+                    return $"GitHub limitó las comprobaciones por un rato. Reintenta en ~{mins} min.";
+                }
+            }
+        }
+        catch { /* sin cabecera → mensaje genérico */ }
+        return "GitHub limitó las comprobaciones por un rato. Inténtalo más tarde.";
     }
 
     /// <summary>Descarga el instalador al directorio temporal con progreso.</summary>

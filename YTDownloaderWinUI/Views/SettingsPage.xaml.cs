@@ -157,7 +157,7 @@ public sealed partial class SettingsPage : Page
 
     private async void OnCheckUpdate(object sender, RoutedEventArgs e)
     {
-        await App.Updater.CheckAsync();
+        await App.Updater.CheckAsync(manual: true);
     }
 
     private async void OnDownloadUpdate(object sender, RoutedEventArgs e)

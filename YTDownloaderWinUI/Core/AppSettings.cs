@@ -40,6 +40,8 @@ public partial class AppSettings : ObservableObject
     [ObservableProperty] private bool _notifyOnComplete = true;
     [ObservableProperty] private bool _startWithWindows;
     [ObservableProperty] private bool _autoCheckUpdates = true;
+    /// <summary>Última vez (UTC) que se consultó GitHub por actualizaciones. Evita chequear en cada arranque (rate limit).</summary>
+    [ObservableProperty] private DateTime _lastUpdateCheckUtc = DateTime.MinValue;
     /// <summary>Si está activo, MediaFy detecta URLs copiadas al portapapeles y ofrece descargarlas.</summary>
     [ObservableProperty] private bool _clipboardWatch;
     /// <summary>True una vez que el tutorial de bienvenida se completa por primera vez.</summary>

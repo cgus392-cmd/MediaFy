@@ -5,6 +5,14 @@ Todos los cambios notables de MediaFy se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [Sin publicar]
+
+### Corregido
+- **Comprobación de actualizaciones más robusta:** ya no se consulta GitHub en cada arranque
+  (agotaba el límite de la API pública → error `403 rate limit exceeded`). Ahora se comprueba
+  como máximo una vez cada 8 horas, los fallos del chequeo automático se silencian, y el botón
+  manual "Buscar" muestra un mensaje claro con el tiempo de reintento cuando hay límite temporal.
+
 ## [1.9.0] - 2026-07-26
 
 ### Añadido

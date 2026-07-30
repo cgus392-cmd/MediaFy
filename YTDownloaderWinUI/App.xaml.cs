@@ -55,9 +55,11 @@ public partial class App : Application
             if (AppSettings.Current.AutoUpdateYtDlp)
                 _ = Task.Run(async () => { try { await DownloadManager.UpdateYtDlpAsync(); } catch { } });
 
-            // Búsqueda de actualizaciones de la app al arrancar
-            if (AppSettings.Current.AutoCheckUpdates)
-                _ = Task.Run(async () => { try { await Updater.CheckAsync(); } catch { } });
+            // Búsqueda de actualizaciones al arrancar — pero como máximo una vez cada 8 horas.
+            // Chequear en cada arranque agota el límite de la API pública de GitHub (60/hora/IP → 403).
+            if (AppSettings.Current.AutoCheckUpdates &&
+                DateTime.UtcNow - AppSettings.Current.LastUpdateCheckUtc > TimeSpan.FromHours(8))
+                _ = Task.Run(async () => { try { await Updater.CheckAsync(manual: false); } catch { } });
 
             // Vigilar portapapeles si el usuario lo activó
             if (AppSettings.Current.ClipboardWatch) Clipboard.Enable();
