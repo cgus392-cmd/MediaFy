@@ -145,7 +145,7 @@ public sealed partial class SettingsPage : Page
             Core.UpdateState.Available       => $"Versión nueva disponible: {u.Latest?.Version}  (tu versión: {cur})",
             Core.UpdateState.Downloading     => $"Descargando MediaFy {u.Latest?.Version}...",
             Core.UpdateState.ReadyToInstall  => $"Lista para instalar MediaFy {u.Latest?.Version}",
-            Core.UpdateState.Error           => $"Error: {u.LastError}",
+            Core.UpdateState.Error           => u.RateLimited ? u.LastError : $"Error: {u.LastError}",
             _                                => $"Versión actual: {cur}"
         };
 

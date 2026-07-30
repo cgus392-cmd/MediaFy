@@ -64,6 +64,8 @@ public class UpdateService
     public UpdateInfo? Latest { get; private set; }
     public string? DownloadedInstallerPath { get; private set; }
     public string LastError { get; private set; } = "";
+    /// <summary>True si el último fallo fue por el límite de la API de GitHub (aviso temporal, no un error real).</summary>
+    public bool RateLimited { get; private set; }
 
     /// <summary>
     /// Consulta GitHub y compara versiones. No descarga aún.
@@ -74,6 +76,7 @@ public class UpdateService
     public async Task<bool> CheckAsync(bool manual = false, CancellationToken ct = default)
     {
         AppSettings.Current.LastUpdateCheckUtc = DateTime.UtcNow; // registra el intento (para el throttle)
+        RateLimited = false;
         State = UpdateState.Checking;
         try
         {
@@ -83,6 +86,7 @@ public class UpdateService
             if (resp.StatusCode == System.Net.HttpStatusCode.Forbidden ||
                 (int)resp.StatusCode == 429)
             {
+                RateLimited = true;
                 if (manual) { LastError = RateLimitMessage(resp); State = UpdateState.Error; }
                 else        { State = UpdateState.Idle; } // arranque: fallar en silencio
                 return false;
