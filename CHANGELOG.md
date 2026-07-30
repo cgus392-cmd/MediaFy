@@ -7,6 +7,15 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+### Añadido
+- **Estado del sistema (diagnóstico integrado):** un semáforo en la barra superior (siempre
+  visible) y una tarjeta en Inicio comprueban dependencias (yt-dlp, ffmpeg, motor JS), cookies,
+  conexión y carpeta de descargas — y hacen una **prueba real de extracción de YouTube** (1×/día
+  y bajo demanda) que detecta rupturas como el cambio anti-bot antes de que fallen las descargas.
+  Cada problema ofrece su acción de arreglo.
+- **Vista de cola:** un panel en la barra de reproducción muestra la cola actual; la canción que
+  suena queda resaltada, clic para saltar, ✕ para quitar y arrastrar para reordenar.
+
 ### Corregido
 - **Comprobación de actualizaciones más robusta:** ya no se consulta GitHub en cada arranque
   (agotaba el límite de la API pública → error `403 rate limit exceeded`). Ahora se comprueba

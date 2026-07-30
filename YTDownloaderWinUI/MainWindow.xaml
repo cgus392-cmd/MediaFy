@@ -29,6 +29,68 @@
                 </TextBlock>
             </StackPanel>
 
+            <!-- Semáforo de estado del sistema -->
+            <Button x:Name="BtnHealth" HorizontalAlignment="Right" Margin="0,0,186,0"
+                    VerticalAlignment="Center" Background="Transparent" BorderThickness="0"
+                    Width="40" Height="32" Padding="0" ToolTipService.ToolTip="Estado del sistema">
+                <FontIcon x:Name="HealthIcon" Glyph="&#xEC61;" FontSize="16"
+                          Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <Button.Flyout>
+                    <Flyout Placement="Bottom" Opened="Health_FlyoutOpened">
+                        <Grid Width="360" MaxHeight="500" RowSpacing="10">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Grid>
+                                <StackPanel>
+                                    <TextBlock Text="Estado del sistema" FontWeight="SemiBold" FontSize="15" />
+                                    <TextBlock x:Name="HealthSummary" Text="" FontSize="11"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </StackPanel>
+                                <Button HorizontalAlignment="Right" VerticalAlignment="Top" Click="Health_Recheck_Click"
+                                        ToolTipService.ToolTip="Comprobar ahora (incluye la prueba real de YouTube)">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon Glyph="&#xE72C;" FontSize="12" />
+                                        <TextBlock Text="Comprobar" FontSize="12" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                            <ListView Grid.Row="1" x:Name="HealthList" SelectionMode="None">
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="ListViewItem">
+                                        <Setter Property="Padding" Value="6,6" />
+                                        <Setter Property="MinHeight" Value="0" />
+                                    </Style>
+                                </ListView.ItemContainerStyle>
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="core:HealthCheck">
+                                        <Grid ColumnSpacing="10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <FontIcon Glyph="{Binding Status, Converter={StaticResource HealthGlyph}}"
+                                                      Foreground="{Binding Status, Converter={StaticResource HealthBrush}}"
+                                                      FontSize="16" VerticalAlignment="Top" Margin="0,2,0,0" />
+                                            <StackPanel Grid.Column="1">
+                                                <TextBlock Text="{x:Bind Name}" FontWeight="SemiBold" FontSize="13" />
+                                                <TextBlock Text="{x:Bind Detail}" FontSize="11" TextWrapping="Wrap"
+                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                            </StackPanel>
+                                            <Button Grid.Column="2" Content="{Binding ActionLabel}" Tag="{Binding}"
+                                                    Click="Health_Action_Click" VerticalAlignment="Center" FontSize="12"
+                                                    Visibility="{Binding ActionLabel, Converter={StaticResource NotEmptyVis}}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </Grid>
+                    </Flyout>
+                </Button.Flyout>
+            </Button>
+
             <!-- Centro de notificaciones -->
             <Button x:Name="BtnNotifications" HorizontalAlignment="Right" Margin="0,0,146,0"
                     VerticalAlignment="Center" Background="Transparent" BorderThickness="0"

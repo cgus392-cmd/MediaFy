@@ -47,6 +47,43 @@ public class StatusToForegroundConverter : IValueConverter
     public object ConvertBack(object value, Type t, object p, string l) => throw new NotImplementedException();
 }
 
+/// <summary>Estado de salud → ícono (semáforo de diagnóstico).</summary>
+public class HealthGlyphConverter : IValueConverter
+{
+    public object Convert(object value, Type t, object p, string l) =>
+        char.ConvertFromUtf32(value is Core.HealthStatus s ? s switch
+        {
+            Core.HealthStatus.Ok      => 0xEC61, // check relleno
+            Core.HealthStatus.Warning => 0xE7BA, // triángulo de aviso
+            _                         => 0xEA39, // insignia de error
+        } : 0xEC61);
+    public object ConvertBack(object value, Type t, object p, string l) => throw new NotImplementedException();
+}
+
+/// <summary>Texto no vacío → Visible; vacío/null → Collapsed (para botones de acción opcionales).</summary>
+public class NotEmptyToVisibleConverter : IValueConverter
+{
+    public object Convert(object value, Type t, object p, string l) =>
+        string.IsNullOrEmpty(value as string) ? Visibility.Collapsed : Visibility.Visible;
+    public object ConvertBack(object value, Type t, object p, string l) => throw new NotImplementedException();
+}
+
+/// <summary>Estado de salud → color (verde / ámbar / rojo).</summary>
+public class HealthBrushConverter : IValueConverter
+{
+    public object Convert(object value, Type t, object p, string l)
+    {
+        var c = value is Core.HealthStatus s ? s switch
+        {
+            Core.HealthStatus.Ok      => Color.FromArgb(255, 0x3F, 0xB9, 0x50),
+            Core.HealthStatus.Warning => Color.FromArgb(255, 0xFF, 0xB0, 0x5C),
+            _                         => Color.FromArgb(255, 0xFF, 0x6B, 0x6B),
+        } : Colors.Gray;
+        return new SolidColorBrush(c);
+    }
+    public object ConvertBack(object value, Type t, object p, string l) => throw new NotImplementedException();
+}
+
 public class StatusToBackgroundConverter : IValueConverter
 {
     public object Convert(object value, Type t, object p, string l)

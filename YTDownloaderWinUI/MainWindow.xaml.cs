@@ -67,6 +67,9 @@ public sealed partial class MainWindow : Window
             if (QueueList?.ItemsSource != null) QueueList.SelectedIndex = App.Playback.QueueIndex;
         });
 
+        Core.DiagnosticsService.Updated += OnHealthUpdated;
+        RunStartupHealthAsync();
+
         _vuTimer.Tick += VuTimer_Tick;
         // El VU solo se ejecuta mientras haya reproducción (se arranca en OnPlaybackChanged)
 
@@ -426,6 +429,71 @@ public sealed partial class MainWindow : Window
         if ((sender as FrameworkElement)?.Tag is not Core.QueueItem item) return;
         int idx = App.Playback.Queue.IndexOf(item);
         if (idx >= 0) App.Playback.RemoveAt(idx);
+    }
+
+    // ── Estado del sistema (diagnóstico) ───────────────────────
+    private async void RunStartupHealthAsync()
+    {
+        Core.DiagnosticsService.RefreshLight(); // instantáneo → pinta el semáforo ya
+        // Prueba real de YouTube 1×/día (throttled) — caza rupturas como el cambio anti-bot.
+        if (DateTime.UtcNow - Core.AppSettings.Current.LastHealthCheckUtc > TimeSpan.FromHours(24))
+            await Core.DiagnosticsService.RunFullAsync();
+    }
+
+    private void OnHealthUpdated() => DispatcherQueue.TryEnqueue(() =>
+    {
+        UpdateHealthIcon();
+        RefreshHealthList();
+    });
+
+    private void UpdateHealthIcon()
+    {
+        var overall = Core.DiagnosticsService.Overall;
+        HealthIcon.Glyph = char.ConvertFromUtf32(overall switch
+        {
+            Core.HealthStatus.Ok      => 0xEC61,
+            Core.HealthStatus.Warning => 0xE7BA,
+            _                         => 0xEA39,
+        });
+        HealthIcon.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(overall switch
+        {
+            Core.HealthStatus.Ok      => Windows.UI.Color.FromArgb(255, 0x3F, 0xB9, 0x50),
+            Core.HealthStatus.Warning => Windows.UI.Color.FromArgb(255, 0xFF, 0xB0, 0x5C),
+            _                         => Windows.UI.Color.FromArgb(255, 0xFF, 0x6B, 0x6B),
+        });
+    }
+
+    private void RefreshHealthList()
+    {
+        if (HealthList is null) return;
+        HealthList.ItemsSource = null;
+        HealthList.ItemsSource = Core.DiagnosticsService.LastResults;
+        HealthSummary.Text = Core.DiagnosticsService.Overall switch
+        {
+            Core.HealthStatus.Ok      => "Todo en orden.",
+            Core.HealthStatus.Warning => "Hay avisos que conviene revisar.",
+            _                         => "Hay un problema que atender.",
+        };
+    }
+
+    private async void Health_FlyoutOpened(object? sender, object e)
+    {
+        RefreshHealthList();
+        if (DateTime.UtcNow - Core.AppSettings.Current.LastHealthCheckUtc > TimeSpan.FromHours(24))
+            await Core.DiagnosticsService.RunFullAsync();
+    }
+
+    private async void Health_Recheck_Click(object sender, RoutedEventArgs e)
+    {
+        HealthSummary.Text = "Comprobando…";
+        Core.AppSettings.Current.LastHealthCheckUtc = DateTime.MinValue; // fuerza la prueba pesada
+        await Core.DiagnosticsService.RunFullAsync();
+    }
+
+    private void Health_Action_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is not Core.HealthCheck hc) return;
+        if (hc.ActionKey == "import-cookies") OpenSettings();
     }
 
     private void Gp_Volume_Changed(object sender, RangeBaseValueChangedEventArgs e)

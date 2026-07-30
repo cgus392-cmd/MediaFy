@@ -94,6 +94,36 @@
                 </Button>
             </Grid>
 
+            <!-- Estado del sistema (mismo dato que el semáforo de la barra superior) -->
+            <Border Margin="0,14,0,0" Padding="16" CornerRadius="12"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                <Grid ColumnSpacing="14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Border Width="46" Height="46" CornerRadius="10" VerticalAlignment="Center"
+                            Background="{ThemeResource ControlFillColorSecondaryBrush}">
+                        <FontIcon x:Name="HealthCardIcon" Glyph="&#xEC61;" FontSize="20" />
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Estado del sistema" FontWeight="SemiBold" FontSize="15" />
+                        <TextBlock x:Name="HealthCardSummary" Text="Comprobando…" FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                    <Button Grid.Column="2" Click="HealthCard_Recheck" VerticalAlignment="Center"
+                            ToolTipService.ToolTip="Comprobar ahora (incluye la prueba real de YouTube)">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE72C;" FontSize="12" />
+                            <TextBlock Text="Comprobar" FontSize="12" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Border>
+
             <TextBlock Text="MediaFy by CG  ·  CG LABS" FontSize="12" Margin="0,28,0,0"
                        HorizontalAlignment="Center"
                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
