@@ -13,6 +13,8 @@
             <local:HealthGlyphConverter x:Key="HealthGlyph" />
             <local:HealthBrushConverter x:Key="HealthBrush" />
             <local:NotEmptyToVisibleConverter x:Key="NotEmptyVis" />
+            <local:LyricBrushConverter x:Key="LyricBrush" />
+            <local:LyricWeightConverter x:Key="LyricWeight" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

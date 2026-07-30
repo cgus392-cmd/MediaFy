@@ -354,6 +354,14 @@ public sealed partial class MainWindow : Window
         GpPrev.IsEnabled = App.Playback.HasPrev;
         GpNext.IsEnabled = App.Playback.HasNext;
         if (App.Playback.HasMedia && !_vuTimer.IsEnabled) _vuTimer.Start();
+
+        // Letra: si cambió la canción, invalida la actual y refresca si el panel está abierto.
+        string lyricKey = App.Playback.CurrentTitle + "|" + App.Playback.CurrentArtist;
+        if (lyricKey != _lyricKey)
+        {
+            _lyrics = null; _lyricIndex = -1;
+            if (_lyricsOpen) _ = LoadLyricsForCurrentAsync();
+        }
     });
 
     // Carátula difuminada de fondo del mini-reproductor (frosted glass sobre la portada).
@@ -496,6 +504,85 @@ public sealed partial class MainWindow : Window
         if (hc.ActionKey == "import-cookies") OpenSettings();
     }
 
+    // ── Letra sincronizada (karaoke) ───────────────────────────
+    private List<Core.LyricLineVm>? _lyrics;
+    private string _lyricKey = "";
+    private int _lyricIndex = -1;
+    private bool _lyricsOpen;
+
+    private void Lyrics_FlyoutOpened(object? sender, object e)
+    {
+        _lyricsOpen = true;
+        _ = LoadLyricsForCurrentAsync();
+    }
+
+    private void Lyrics_FlyoutClosed(object? sender, object e) => _lyricsOpen = false;
+
+    private async Task LoadLyricsForCurrentAsync()
+    {
+        string title = App.Playback.CurrentTitle;
+        string artist = App.Playback.CurrentArtist;
+        string key = title + "|" + artist;
+        LyricsTitle.Text = string.IsNullOrEmpty(title) ? "Letra" : title;
+
+        if (!App.Playback.HasMedia) { ShowLyricsState(false, "Nada en reproducción."); return; }
+
+        // Ya cargada para esta canción → solo mostrarla.
+        if (_lyrics != null && _lyricKey == key)
+        {
+            LyricsList.ItemsSource = _lyrics;
+            ShowLyricsState(_lyrics.Count > 0, "No encontramos letra sincronizada para esta canción.");
+            return;
+        }
+
+        _lyricKey = key; _lyrics = null; _lyricIndex = -1;
+        LyricsList.ItemsSource = null;
+        ShowLyricsState(false, "Buscando letra…");
+
+        double dur = App.Playback.Player?.PlaybackSession?.NaturalDuration.TotalSeconds ?? 0;
+        var lines = await Core.LyricsService.FetchAsync(
+            App.Playback.CurrentPath, title, artist, dur > 0 ? dur : null);
+        if (_lyricKey != key) return; // cambió la canción mientras buscábamos
+
+        _lyrics = lines;
+        if (lines is { Count: > 0 })
+        {
+            LyricsList.ItemsSource = lines;
+            ShowLyricsState(true, "");
+        }
+        else ShowLyricsState(false, "No encontramos letra sincronizada para esta canción.");
+    }
+
+    private void ShowLyricsState(bool hasLyrics, string message)
+    {
+        LyricsList.Visibility = hasLyrics ? Visibility.Visible : Visibility.Collapsed;
+        LyricsEmpty.Visibility = hasLyrics ? Visibility.Collapsed : Visibility.Visible;
+        if (!hasLyrics) LyricsEmpty.Text = message;
+    }
+
+    private void SyncLyrics()
+    {
+        var lines = _lyrics;
+        if (lines is null || lines.Count == 0 || LyricsList is null) return;
+
+        var pos = App.Playback.Player?.PlaybackSession?.Position ?? TimeSpan.Zero;
+        int idx = -1;
+        for (int i = 0; i < lines.Count; i++)
+        {
+            if (lines[i].Time <= pos) idx = i;
+            else break;
+        }
+        if (idx == _lyricIndex) return;
+
+        if (_lyricIndex >= 0 && _lyricIndex < lines.Count) lines[_lyricIndex].IsCurrent = false;
+        _lyricIndex = idx;
+        if (idx >= 0)
+        {
+            lines[idx].IsCurrent = true;
+            try { LyricsList.ScrollIntoView(lines[idx]); } catch { }
+        }
+    }
+
     private void Gp_Volume_Changed(object sender, RangeBaseValueChangedEventArgs e)
     {
         if (_volSync || GpVolume is null || GpMiniVolume is null) return;
@@ -530,6 +617,7 @@ public sealed partial class MainWindow : Window
         SetBar(GpVuRightBig, _vuR);
         App.Playback.TickFade();   // envolvente de fundido entre canciones
         UpdateSeekUI();
+        SyncLyrics();
         // Detener el VU cuando ya no hay audio y las barras decayeron (ahorra CPU en reposo)
         if (!App.Playback.HasMedia && _vuL < 0.01 && _vuR < 0.01) _vuTimer.Stop();
     }

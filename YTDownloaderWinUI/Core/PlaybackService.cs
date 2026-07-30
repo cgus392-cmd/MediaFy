@@ -45,6 +45,8 @@ public class PlaybackService
     public string CurrentArtist { get; private set; } = string.Empty;
     /// <summary>Ruta de la portada actual (si la hay), para el mini-reproductor.</summary>
     public string? CurrentCover => _currentCover;
+    /// <summary>Ruta del archivo local en reproducción (null si es streaming), para leer sus etiquetas.</summary>
+    public string? CurrentPath => _currentPath;
     public bool HasMedia { get; private set; }
 
     /// <summary>Hay una canción siguiente/anterior en la cola.</summary>

@@ -60,6 +60,23 @@ public class HealthGlyphConverter : IValueConverter
     public object ConvertBack(object value, Type t, object p, string l) => throw new NotImplementedException();
 }
 
+/// <summary>Línea de letra actual (true) → color de acento; resto → color atenuado.</summary>
+public class LyricBrushConverter : IValueConverter
+{
+    public object Convert(object value, Type t, object p, string l) =>
+        (Brush)Application.Current.Resources[
+            value is true ? "AccentTextFillColorPrimaryBrush" : "TextFillColorTertiaryBrush"];
+    public object ConvertBack(object value, Type t, object p, string l) => throw new NotImplementedException();
+}
+
+/// <summary>Línea de letra actual (true) → SemiBold; resto → Normal.</summary>
+public class LyricWeightConverter : IValueConverter
+{
+    public object Convert(object value, Type t, object p, string l) =>
+        value is true ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
+    public object ConvertBack(object value, Type t, object p, string l) => throw new NotImplementedException();
+}
+
 /// <summary>Texto no vacío → Visible; vacío/null → Collapsed (para botones de acción opcionales).</summary>
 public class NotEmptyToVisibleConverter : IValueConverter
 {
