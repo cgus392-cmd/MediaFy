@@ -5,6 +5,8 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using Windows.Foundation;
@@ -504,40 +506,56 @@ public sealed partial class MainWindow : Window
         if (hc.ActionKey == "import-cookies") OpenSettings();
     }
 
-    // ── Letra sincronizada (karaoke) ───────────────────────────
+    // ── Letra sincronizada (vista inmersiva, karaoke) ──────────
     private List<Core.LyricLineVm>? _lyrics;
     private string _lyricKey = "";
     private int _lyricIndex = -1;
     private bool _lyricsOpen;
+    private readonly List<TextBlock> _lyricBlocks = new();
+    private double _lyricScale = 1.0;
+    private bool _lyricCentered = true;
 
-    private void Lyrics_FlyoutOpened(object? sender, object e)
+    private void Lyrics_OpenOverlay(object sender, RoutedEventArgs e)
     {
         _lyricsOpen = true;
+        LyricsOverlay.Visibility = Visibility.Visible;
+        LyricsAlignIcon.Glyph = char.ConvertFromUtf32(_lyricCentered ? 0xE8E9 : 0xE8E4);
+        SetLyricsBg();
         _ = LoadLyricsForCurrentAsync();
     }
 
-    private void Lyrics_FlyoutClosed(object? sender, object e) => _lyricsOpen = false;
+    private void Lyrics_CloseOverlay(object sender, RoutedEventArgs e)
+    {
+        _lyricsOpen = false;
+        LyricsOverlay.Visibility = Visibility.Collapsed;
+    }
+
+    private void SetLyricsBg()
+    {
+        string? cover = App.Playback.CurrentCover;
+        if (!string.IsNullOrEmpty(cover) && (cover.StartsWith("http") || System.IO.File.Exists(cover)))
+        {
+            try { LyricsBgImage.Source = new BitmapImage(new Uri(cover)); LyricsBgImage.Opacity = 1; return; }
+            catch { }
+        }
+        LyricsBgImage.Source = null; LyricsBgImage.Opacity = 0;
+    }
 
     private async Task LoadLyricsForCurrentAsync()
     {
         string title = App.Playback.CurrentTitle;
         string artist = App.Playback.CurrentArtist;
         string key = title + "|" + artist;
-        LyricsTitle.Text = string.IsNullOrEmpty(title) ? "Letra" : title;
+        LyricsOverlayTitle.Text = string.IsNullOrEmpty(title) ? "Letra" : title;
+        LyricsOverlayArtist.Text = artist;
+        SetLyricsBg();
 
-        if (!App.Playback.HasMedia) { ShowLyricsState(false, "Nada en reproducción."); return; }
+        if (!App.Playback.HasMedia) { ShowLyricsStatus("Nada en reproducción."); return; }
 
-        // Ya cargada para esta canción → solo mostrarla.
-        if (_lyrics != null && _lyricKey == key)
-        {
-            LyricsList.ItemsSource = _lyrics;
-            ShowLyricsState(_lyrics.Count > 0, "No encontramos letra sincronizada para esta canción.");
-            return;
-        }
+        if (_lyrics != null && _lyricKey == key) { BuildLyricsBlocks(); return; }
 
         _lyricKey = key; _lyrics = null; _lyricIndex = -1;
-        LyricsList.ItemsSource = null;
-        ShowLyricsState(false, "Buscando letra…");
+        ShowLyricsStatus("Buscando letra…");
 
         double dur = App.Playback.Player?.PlaybackSession?.NaturalDuration.TotalSeconds ?? 0;
         var lines = await Core.LyricsService.FetchAsync(
@@ -545,25 +563,83 @@ public sealed partial class MainWindow : Window
         if (_lyricKey != key) return; // cambió la canción mientras buscábamos
 
         _lyrics = lines;
-        if (lines is { Count: > 0 })
-        {
-            LyricsList.ItemsSource = lines;
-            ShowLyricsState(true, "");
-        }
-        else ShowLyricsState(false, "No encontramos letra sincronizada para esta canción.");
+        if (lines is { Count: > 0 }) BuildLyricsBlocks();
+        else ShowLyricsStatus("No encontramos letra sincronizada para esta canción.");
     }
 
-    private void ShowLyricsState(bool hasLyrics, string message)
+    private void ShowLyricsStatus(string message)
     {
-        LyricsList.Visibility = hasLyrics ? Visibility.Visible : Visibility.Collapsed;
-        LyricsEmpty.Visibility = hasLyrics ? Visibility.Collapsed : Visibility.Visible;
-        if (!hasLyrics) LyricsEmpty.Text = message;
+        LyricsStatus.Text = message;
+        LyricsStatus.Visibility = Visibility.Visible;
+        LyricsStack.Children.Clear();
+        _lyricBlocks.Clear();
+        _lyricIndex = -1;
+    }
+
+    private LinearGradientBrush? _lyricFill;   // relleno karaoke de la línea actual
+
+    private static SolidColorBrush WhiteBrush() =>
+        new(Windows.UI.Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF));
+
+    private void BuildLyricsBlocks()
+    {
+        LyricsStatus.Visibility = Visibility.Collapsed;
+        LyricsStack.Children.Clear();
+        _lyricBlocks.Clear();
+        _lyricIndex = -1;
+        _lyricFill = null;
+        if (_lyrics is null) return;
+
+        double maxW = LyricsScroll.ActualWidth - 96;
+        if (maxW < 200) maxW = 620;
+        var halign = _lyricCentered ? HorizontalAlignment.Center : HorizontalAlignment.Left;
+        var talign = _lyricCentered ? TextAlignment.Center : TextAlignment.Left;
+
+        LyricsStack.Children.Add(new Border { Height = 300 }); // espaciador para centrar la 1ª línea
+        foreach (var line in _lyrics)
+        {
+            var tb = new TextBlock
+            {
+                Text = string.IsNullOrEmpty(line.Text) ? "♪" : line.Text,
+                TextWrapping = TextWrapping.Wrap,
+                TextAlignment = talign,
+                HorizontalAlignment = halign,
+                MaxWidth = maxW,
+                FontSize = 26 * _lyricScale,
+                Margin = new Thickness(0, 10, 0, 10),
+                Opacity = 0.35,
+                Foreground = WhiteBrush(),                 // atenuada vía Opacity
+                RenderTransformOrigin = new Windows.Foundation.Point(0.5, 0.5),
+                RenderTransform = new ScaleTransform(),
+            };
+            LyricsStack.Children.Add(tb);
+            _lyricBlocks.Add(tb);
+        }
+        LyricsStack.Children.Add(new Border { Height = 300 });
+        SyncLyrics();
+    }
+
+    // Degradado que "llena" la línea actual de izquierda a derecha al ritmo (karaoke aproximado).
+    private static LinearGradientBrush MakeFillBrush()
+    {
+        var full = Windows.UI.Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF); // cantado
+        var dim  = Windows.UI.Color.FromArgb(0x80, 0xFF, 0xFF, 0xFF); // aún por cantar
+        var b = new LinearGradientBrush
+        {
+            StartPoint = new Windows.Foundation.Point(0, 0.5),
+            EndPoint   = new Windows.Foundation.Point(1, 0.5),
+        };
+        b.GradientStops.Add(new GradientStop { Color = full, Offset = 0 });
+        b.GradientStops.Add(new GradientStop { Color = full, Offset = 0 });
+        b.GradientStops.Add(new GradientStop { Color = dim,  Offset = 0 });
+        b.GradientStops.Add(new GradientStop { Color = dim,  Offset = 1 });
+        return b;
     }
 
     private void SyncLyrics()
     {
         var lines = _lyrics;
-        if (lines is null || lines.Count == 0 || LyricsList is null) return;
+        if (!_lyricsOpen || lines is null || lines.Count == 0 || _lyricBlocks.Count != lines.Count) return;
 
         var pos = App.Playback.Player?.PlaybackSession?.Position ?? TimeSpan.Zero;
         int idx = -1;
@@ -572,15 +648,90 @@ public sealed partial class MainWindow : Window
             if (lines[i].Time <= pos) idx = i;
             else break;
         }
-        if (idx == _lyricIndex) return;
 
-        if (_lyricIndex >= 0 && _lyricIndex < lines.Count) lines[_lyricIndex].IsCurrent = false;
-        _lyricIndex = idx;
-        if (idx >= 0)
+        // Cambio de línea: animar la que sale (atenuar) y la que entra (resaltar + centrar).
+        if (idx != _lyricIndex)
         {
-            lines[idx].IsCurrent = true;
-            try { LyricsList.ScrollIntoView(lines[idx]); } catch { }
+            if (_lyricIndex >= 0 && _lyricIndex < _lyricBlocks.Count)
+            {
+                var prev = _lyricBlocks[_lyricIndex];
+                prev.Foreground = WhiteBrush();
+                AnimateBlock(prev, false);
+            }
+            _lyricIndex = idx;
+            if (idx >= 0)
+            {
+                var cur = _lyricBlocks[idx];
+                _lyricFill = MakeFillBrush();
+                cur.Foreground = _lyricFill;
+                AnimateBlock(cur, true);
+                CenterLyric(cur);
+            }
         }
+
+        // Barrido karaoke: mueve el borde del relleno según el progreso dentro de la línea.
+        if (idx >= 0 && _lyricFill != null)
+        {
+            double start = lines[idx].Time.TotalSeconds;
+            double end = (idx + 1 < lines.Count) ? lines[idx + 1].Time.TotalSeconds : start + 4;
+            double p = end > start ? Math.Clamp((pos.TotalSeconds - start) / (end - start), 0, 1) : 1;
+            _lyricFill.GradientStops[1].Offset = p;
+            _lyricFill.GradientStops[2].Offset = p;
+        }
+    }
+
+    // Transición suave de una línea entre estado normal (atenuada, escala 1) y actual (brillante, escala 1.08).
+    private static void AnimateBlock(TextBlock tb, bool current)
+    {
+        if (tb.RenderTransform is not ScaleTransform scale) { scale = new ScaleTransform(); tb.RenderTransform = scale; }
+        var sb = new Storyboard();
+        void Tween(DependencyObject target, string prop, double to)
+        {
+            var a = new DoubleAnimation
+            {
+                To = to,
+                Duration = TimeSpan.FromMilliseconds(300),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+                EnableDependentAnimation = true,
+            };
+            Storyboard.SetTarget(a, target);
+            Storyboard.SetTargetProperty(a, prop);
+            sb.Children.Add(a);
+        }
+        Tween(tb, "Opacity", current ? 1.0 : 0.35);
+        Tween(scale, "ScaleX", current ? 1.08 : 1.0);
+        Tween(scale, "ScaleY", current ? 1.08 : 1.0);
+        sb.Begin();
+    }
+
+    private void CenterLyric(TextBlock tb)
+    {
+        try
+        {
+            tb.UpdateLayout();
+            double y = tb.TransformToVisual(LyricsStack).TransformPoint(new Windows.Foundation.Point(0, 0)).Y;
+            double target = y - LyricsScroll.ViewportHeight / 2 + tb.ActualHeight / 2;
+            LyricsScroll.ChangeView(null, target, null, false); // scroll animado
+        }
+        catch { }
+    }
+
+    private void Lyrics_FontSmaller(object sender, RoutedEventArgs e) => AdjustLyricScale(-0.1);
+    private void Lyrics_FontBigger(object sender, RoutedEventArgs e)  => AdjustLyricScale(+0.1);
+    private void AdjustLyricScale(double d)
+    {
+        _lyricScale = Math.Clamp(_lyricScale + d, 0.7, 1.8);
+        foreach (var tb in _lyricBlocks) tb.FontSize = 26 * _lyricScale;
+        if (_lyricIndex >= 0 && _lyricIndex < _lyricBlocks.Count) CenterLyric(_lyricBlocks[_lyricIndex]);
+    }
+
+    private void Lyrics_ToggleAlign(object sender, RoutedEventArgs e)
+    {
+        _lyricCentered = !_lyricCentered;
+        LyricsAlignIcon.Glyph = char.ConvertFromUtf32(_lyricCentered ? 0xE8E9 : 0xE8E4);
+        var ha = _lyricCentered ? HorizontalAlignment.Center : HorizontalAlignment.Left;
+        var ta = _lyricCentered ? TextAlignment.Center : TextAlignment.Left;
+        foreach (var tb in _lyricBlocks) { tb.HorizontalAlignment = ha; tb.TextAlignment = ta; }
     }
 
     private void Gp_Volume_Changed(object sender, RangeBaseValueChangedEventArgs e)

@@ -8,11 +8,13 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 ## [Sin publicar]
 
 ### Añadido
-- **Letras sincronizadas (karaoke):** un panel en la barra de reproducción muestra la letra de
-  la canción y resalta la línea que va sonando, con auto-scroll. Para identificar la canción lee
-  las **etiquetas ID3** del archivo (artista/título/álbum/duración) —así acierta incluso en álbumes
-  con pistas numeradas "07…"— y usa el match exacto de lrclib (fuente gratuita), con fallback a
-  búsqueda por texto. Se refresca sola al cambiar de canción.
+- **Letras sincronizadas (karaoke) — vista inmersiva:** una pantalla dedicada con la carátula del
+  álbum difuminada de fondo, la línea actual **rellenándose de izquierda a derecha al ritmo**
+  (barrido karaoke), transiciones suaves entre líneas (escala + iluminación) y scroll centrado
+  animado. Ajustes de **tamaño de fuente** y **alineación**. Para identificar la canción lee las
+  **etiquetas ID3** del archivo (artista/título/álbum/duración) —así acierta incluso en álbumes con
+  pistas numeradas "07…"— y usa el match exacto de lrclib (gratis), con fallback a búsqueda. Se
+  refresca sola al cambiar de canción.
 - **Estado del sistema (diagnóstico integrado):** un semáforo en la barra superior (siempre
   visible) y una tarjeta en Inicio comprueban dependencias (yt-dlp, ffmpeg, motor JS), cookies,
   conexión y carpeta de descargas — y hacen una **prueba real de extracción de YouTube** (1×/día

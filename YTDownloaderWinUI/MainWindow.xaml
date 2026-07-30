@@ -434,41 +434,10 @@
                         VerticalAlignment="Center" ValueChanged="Gp_Volume_Changed" />
 
                 <StackPanel Grid.Column="6" Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,0,0">
-                    <!-- Letra sincronizada (karaoke) -->
-                    <Button Background="Transparent" BorderThickness="0" Width="40" Height="40" Padding="0"
-                            ToolTipService.ToolTip="Letra sincronizada">
+                    <!-- Letra sincronizada (abre la vista inmersiva) -->
+                    <Button Click="Lyrics_OpenOverlay" Background="Transparent" BorderThickness="0"
+                            Width="40" Height="40" Padding="0" ToolTipService.ToolTip="Letra sincronizada">
                         <FontIcon Glyph="&#xE7F0;" FontSize="14" />
-                        <Button.Flyout>
-                            <Flyout Placement="Top" Opened="Lyrics_FlyoutOpened" Closed="Lyrics_FlyoutClosed">
-                                <Grid Width="360" MaxHeight="500" RowSpacing="8">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="*" />
-                                    </Grid.RowDefinitions>
-                                    <TextBlock x:Name="LyricsTitle" Text="Letra" FontWeight="SemiBold" FontSize="15"
-                                               TextTrimming="CharacterEllipsis" />
-                                    <ListView Grid.Row="1" x:Name="LyricsList" SelectionMode="None" IsItemClickEnabled="False">
-                                        <ListView.ItemContainerStyle>
-                                            <Style TargetType="ListViewItem">
-                                                <Setter Property="Padding" Value="8,3" />
-                                                <Setter Property="MinHeight" Value="0" />
-                                            </Style>
-                                        </ListView.ItemContainerStyle>
-                                        <ListView.ItemTemplate>
-                                            <DataTemplate x:DataType="core:LyricLineVm">
-                                                <TextBlock Text="{x:Bind Text}" TextWrapping="Wrap" FontSize="14"
-                                                           Foreground="{Binding IsCurrent, Mode=OneWay, Converter={StaticResource LyricBrush}}"
-                                                           FontWeight="{Binding IsCurrent, Mode=OneWay, Converter={StaticResource LyricWeight}}" />
-                                            </DataTemplate>
-                                        </ListView.ItemTemplate>
-                                    </ListView>
-                                    <TextBlock Grid.Row="1" x:Name="LyricsEmpty" Visibility="Collapsed"
-                                               VerticalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
-                                               FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                               Text="Buscando letra…" />
-                                </Grid>
-                            </Flyout>
-                        </Button.Flyout>
                     </Button>
 
                     <!-- Cola de reproducción -->
@@ -535,5 +504,61 @@
                 </StackPanel>
             </Grid>
         </Border>
+
+        <!-- ═══ Vista inmersiva de letras ═══ -->
+        <Grid x:Name="LyricsOverlay" Grid.Row="1" Grid.RowSpan="3" Visibility="Collapsed">
+            <!-- Fondo: carátula difuminada + velo oscuro (liquid glass a pantalla completa) -->
+            <Image x:Name="LyricsBgImage" Stretch="UniformToFill" Opacity="0" />
+            <Border>
+                <Border.Background>
+                    <AcrylicBrush TintColor="#101014" TintOpacity="0.55" TintLuminosityOpacity="0.5"
+                                  FallbackColor="#F0101014" />
+                </Border.Background>
+            </Border>
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- Barra superior: título + ajustes -->
+                <Grid Padding="24,16,16,8" ColumnSpacing="12">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock x:Name="LyricsOverlayTitle" Text="" FontSize="18" FontWeight="SemiBold"
+                                   Foreground="White" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                        <TextBlock x:Name="LyricsOverlayArtist" Text="" FontSize="13"
+                                   Foreground="#B0FFFFFF" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Spacing="2">
+                        <Button Click="Lyrics_FontSmaller" Background="Transparent" BorderThickness="0"
+                                Width="40" Height="40" Padding="0" ToolTipService.ToolTip="Texto más pequeño">
+                            <FontIcon Glyph="&#xE8E7;" FontSize="15" Foreground="White" />
+                        </Button>
+                        <Button Click="Lyrics_FontBigger" Background="Transparent" BorderThickness="0"
+                                Width="40" Height="40" Padding="0" ToolTipService.ToolTip="Texto más grande">
+                            <FontIcon Glyph="&#xE8E8;" FontSize="15" Foreground="White" />
+                        </Button>
+                        <Button Click="Lyrics_ToggleAlign" Background="Transparent" BorderThickness="0"
+                                Width="40" Height="40" Padding="0" ToolTipService.ToolTip="Alineación">
+                            <FontIcon x:Name="LyricsAlignIcon" Glyph="&#xE8E4;" FontSize="15" Foreground="White" />
+                        </Button>
+                        <Button Click="Lyrics_CloseOverlay" Background="Transparent" BorderThickness="0"
+                                Width="40" Height="40" Padding="0" ToolTipService.ToolTip="Cerrar">
+                            <FontIcon Glyph="&#xE711;" FontSize="15" Foreground="White" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Letras (líneas generadas en código para control total del karaoke) -->
+                <ScrollViewer Grid.Row="1" x:Name="LyricsScroll" VerticalScrollBarVisibility="Hidden"
+                              HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled" Padding="48,0">
+                    <StackPanel x:Name="LyricsStack" />
+                </ScrollViewer>
+                <TextBlock Grid.Row="1" x:Name="LyricsStatus" Visibility="Collapsed" Foreground="#CCFFFFFF"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="15"
+                           TextWrapping="Wrap" TextAlignment="Center" MaxWidth="420" Text="Buscando letra…" />
+            </Grid>
+        </Grid>
     </Grid>
 </Window>
