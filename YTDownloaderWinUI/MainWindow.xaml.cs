@@ -62,6 +62,10 @@ public sealed partial class MainWindow : Window
 
         SyncVolumeSliders();
         App.Playback.Changed += OnPlaybackChanged;
+        App.Playback.QueueChanged += () => DispatcherQueue.TryEnqueue(() =>
+        {
+            if (QueueList?.ItemsSource != null) QueueList.SelectedIndex = App.Playback.QueueIndex;
+        });
 
         _vuTimer.Tick += VuTimer_Tick;
         // El VU solo se ejecuta mientras haya reproducción (se arranca en OnPlaybackChanged)
@@ -402,6 +406,27 @@ public sealed partial class MainWindow : Window
     private void Gp_PlayPause_Click(object sender, RoutedEventArgs e) => App.Playback.Toggle();
     private void Gp_Prev_Click(object sender, RoutedEventArgs e) => App.Playback.Previous();
     private void Gp_Next_Click(object sender, RoutedEventArgs e) => App.Playback.Next();
+
+    // ── Vista de cola ──────────────────────────────────────────
+    private void Queue_FlyoutOpened(object? sender, object e)
+    {
+        // La ObservableCollection se refleja en vivo; solo enlazamos una vez y marcamos la actual.
+        if (QueueList.ItemsSource is null) QueueList.ItemsSource = App.Playback.Queue;
+        QueueList.SelectedIndex = App.Playback.QueueIndex;
+    }
+
+    private void Queue_ItemClick(object sender, ItemClickEventArgs e)
+    {
+        int idx = App.Playback.Queue.IndexOf((Core.QueueItem)e.ClickedItem);
+        if (idx >= 0) App.Playback.PlayAt(idx);
+    }
+
+    private void QueueRemove_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is not Core.QueueItem item) return;
+        int idx = App.Playback.Queue.IndexOf(item);
+        if (idx >= 0) App.Playback.RemoveAt(idx);
+    }
 
     private void Gp_Volume_Changed(object sender, RangeBaseValueChangedEventArgs e)
     {

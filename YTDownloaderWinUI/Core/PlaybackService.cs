@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.IO;
 using Windows.Media;
 using Windows.Media.Core;
@@ -25,9 +27,15 @@ public class PlaybackService
     private string? _currentPath;
     private string? _currentCover;
 
-    // Cola de reproducción
-    private readonly List<QueueItem> _queue = new();
+    // Cola de reproducción (observable: la vista de cola la refleja en vivo).
+    public ObservableCollection<QueueItem> Queue { get; } = new();
     private int _qIndex = -1;
+    private QueueItem? _current;   // elemento en reproducción (para re-ubicar el índice tras reordenar)
+
+    /// <summary>Índice del elemento en reproducción dentro de la cola.</summary>
+    public int QueueIndex => _qIndex;
+    /// <summary>Se dispara cuando cambia la cola o el índice actual (para refrescar la vista).</summary>
+    public event Action? QueueChanged;
 
     // Volumen objetivo del usuario (el fundido mueve _player.Volume por debajo de este techo).
     private double _targetVolume = 1.0;
@@ -40,7 +48,7 @@ public class PlaybackService
     public bool HasMedia { get; private set; }
 
     /// <summary>Hay una canción siguiente/anterior en la cola.</summary>
-    public bool HasNext => _qIndex >= 0 && _qIndex < _queue.Count - 1;
+    public bool HasNext => _qIndex >= 0 && _qIndex < Queue.Count - 1;
     public bool HasPrev => _qIndex > 0;
 
     public bool IsPlaying => _player.PlaybackSession?.PlaybackState == MediaPlaybackState.Playing;
@@ -79,6 +87,16 @@ public class PlaybackService
             else Changed?.Invoke();
         };
         _player.PlaybackSession.PlaybackStateChanged += (_, _) => { UpdateSmtcState(); Changed?.Invoke(); };
+
+        // Si el usuario reordena la cola (arrastrar en la vista de cola), re-ubicamos el índice
+        // actual siguiendo el elemento que está sonando, para no perder el hilo.
+        Queue.CollectionChanged += (_, e) =>
+        {
+            if (e.Action == NotifyCollectionChangedAction.Move && _current != null)
+                _qIndex = Queue.IndexOf(_current);
+            if (_smtc != null) { _smtc.IsNextEnabled = HasNext; _smtc.IsPreviousEnabled = HasPrev; }
+            QueueChanged?.Invoke();
+        };
     }
 
     // ── Reproducción de un solo elemento (resetea la cola a ese único elemento) ──
@@ -94,8 +112,8 @@ public class PlaybackService
 
     private Task PlaySingleAsync(QueueItem item)
     {
-        _queue.Clear();
-        _queue.Add(item);
+        Queue.Clear();
+        Queue.Add(item);
         _qIndex = 0;
         return PlayCurrentAsync();
     }
@@ -103,20 +121,49 @@ public class PlaybackService
     /// <summary>Reproduce una cola completa empezando en startIndex (álbumes/carpetas) con auto-siguiente.</summary>
     public Task PlayQueueAsync(IReadOnlyList<QueueItem> items, int startIndex)
     {
-        _queue.Clear();
-        _queue.AddRange(items);
-        _qIndex = Math.Clamp(startIndex, 0, Math.Max(0, _queue.Count - 1));
+        Queue.Clear();
+        foreach (var it in items) Queue.Add(it);
+        _qIndex = Math.Clamp(startIndex, 0, Math.Max(0, Queue.Count - 1));
         return PlayCurrentAsync();
     }
 
     public void Next()     { if (HasNext) { _qIndex++; _ = PlayCurrentAsync(); } }
     public void Previous() { if (HasPrev) { _qIndex--; _ = PlayCurrentAsync(); } }
 
+    /// <summary>Salta a un elemento concreto de la cola (clic en la vista de cola).</summary>
+    public void PlayAt(int index)
+    {
+        if (index >= 0 && index < Queue.Count) { _qIndex = index; _ = PlayCurrentAsync(); }
+    }
+
+    /// <summary>Quita un elemento de la cola. Si es el que suena, salta al siguiente (o para si era el último).</summary>
+    public void RemoveAt(int index)
+    {
+        if (index < 0 || index >= Queue.Count) return;
+
+        if (index == _qIndex)
+        {
+            // Se está quitando la canción actual.
+            bool hadNext = HasNext;
+            Queue.RemoveAt(index);           // dispara CollectionChanged (Remove) → QueueChanged
+            if (hadNext) { /* el siguiente ocupó este índice */ _ = PlayCurrentAsync(); }
+            else if (Queue.Count > 0) { _qIndex = Queue.Count - 1; _ = PlayCurrentAsync(); }
+            else Close();
+            return;
+        }
+
+        Queue.RemoveAt(index);
+        if (index < _qIndex) _qIndex--;      // el actual se corrió una posición hacia arriba
+        if (_smtc != null) { _smtc.IsNextEnabled = HasNext; _smtc.IsPreviousEnabled = HasPrev; }
+        QueueChanged?.Invoke();
+    }
+
     /// <summary>Reproduce el elemento actual de la cola. Arranca en silencio si el fundido está activo.</summary>
     private async Task PlayCurrentAsync()
     {
-        if (_qIndex < 0 || _qIndex >= _queue.Count) return;
-        var it = _queue[_qIndex];
+        if (_qIndex < 0 || _qIndex >= Queue.Count) return;
+        var it = Queue[_qIndex];
+        _current = it;
 
         MediaSource source = it.IsStream
             ? MediaSource.CreateFromUri(new Uri(it.Source))
@@ -139,6 +186,7 @@ public class PlaybackService
         if (_smtc != null) { _smtc.IsNextEnabled = HasNext; _smtc.IsPreviousEnabled = HasPrev; }
         await UpdateSmtcMetadataAsync();
         Changed?.Invoke();
+        QueueChanged?.Invoke();
     }
 
     /// <summary>
@@ -188,11 +236,12 @@ public class PlaybackService
         try { _player.Pause(); } catch { }
         _player.Source = null;
         HasMedia = false;
-        _queue.Clear(); _qIndex = -1; _fading = false;
+        Queue.Clear(); _qIndex = -1; _current = null; _fading = false;
         CurrentTitle = CurrentArtist = string.Empty;
         LevelLeft = LevelRight = 0;
         if (_smtc != null) _smtc.IsEnabled = false;
         Changed?.Invoke();
+        QueueChanged?.Invoke();
     }
 
     /// <summary>Actualiza los niveles del VU. Llamado por el timer de UI ~15Hz.</summary>

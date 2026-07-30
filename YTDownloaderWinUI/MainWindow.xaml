@@ -371,26 +371,69 @@
                 <Slider Grid.Column="5" x:Name="GpVolume" Width="110" Minimum="0" Maximum="100"
                         VerticalAlignment="Center" ValueChanged="Gp_Volume_Changed" />
 
-                <Button Grid.Column="6" Click="Gp_Cast_Click"
-                        Background="Transparent" BorderThickness="0"
-                        Width="40" Height="40" Padding="0" VerticalAlignment="Center"
-                        Margin="6,0,0,0" ToolTipService.ToolTip="Transmitir a dispositivo">
-                    <FontIcon Glyph="&#xEC15;" FontSize="14" />
-                </Button>
+                <StackPanel Grid.Column="6" Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,0,0">
+                    <!-- Cola de reproducción -->
+                    <Button Background="Transparent" BorderThickness="0" Width="40" Height="40" Padding="0"
+                            ToolTipService.ToolTip="Cola de reproducción">
+                        <FontIcon Glyph="&#xE8FD;" FontSize="14" />
+                        <Button.Flyout>
+                            <Flyout Placement="Top" Opened="Queue_FlyoutOpened">
+                                <Grid Width="330" MaxHeight="440" RowSpacing="8">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="*" />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Text="Cola de reproducción" FontWeight="SemiBold" FontSize="14" />
+                                    <ListView Grid.Row="1" x:Name="QueueList"
+                                              SelectionMode="Single" IsItemClickEnabled="True" ItemClick="Queue_ItemClick"
+                                              CanReorderItems="True" AllowDrop="True" ReorderMode="Enabled">
+                                        <ListView.ItemContainerStyle>
+                                            <Style TargetType="ListViewItem">
+                                                <Setter Property="Padding" Value="8,4" />
+                                                <Setter Property="MinHeight" Value="0" />
+                                            </Style>
+                                        </ListView.ItemContainerStyle>
+                                        <ListView.ItemTemplate>
+                                            <DataTemplate x:DataType="core:QueueItem">
+                                                <Grid ColumnSpacing="8">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <FontIcon Glyph="&#xE76F;" FontSize="11" VerticalAlignment="Center"
+                                                              Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                                    <TextBlock Grid.Column="1" Text="{x:Bind Title}" FontSize="12"
+                                                               TextTrimming="CharacterEllipsis" MaxLines="1"
+                                                               VerticalAlignment="Center" />
+                                                    <Button Grid.Column="2" Click="QueueRemove_Click" Tag="{x:Bind}"
+                                                            Background="Transparent" BorderThickness="0"
+                                                            Width="28" Height="28" Padding="0"
+                                                            ToolTipService.ToolTip="Quitar de la cola">
+                                                        <FontIcon Glyph="&#xE711;" FontSize="10" />
+                                                    </Button>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ListView.ItemTemplate>
+                                    </ListView>
+                                </Grid>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
 
-                <Button Grid.Column="7" Click="Gp_PopOut_Click"
-                        Background="Transparent" BorderThickness="0"
-                        Width="40" Height="40" Padding="0" VerticalAlignment="Center"
-                        ToolTipService.ToolTip="Mini-reproductor flotante">
-                    <FontIcon Glyph="&#xE8A7;" FontSize="14" />
-                </Button>
-
-                <Button Grid.Column="8" Click="Gp_Close_Click"
-                        Background="Transparent" BorderThickness="0"
-                        Width="40" Height="40" Padding="0" VerticalAlignment="Center"
-                        ToolTipService.ToolTip="Cerrar">
-                    <FontIcon Glyph="&#xE711;" FontSize="14" />
-                </Button>
+                    <Button Click="Gp_Cast_Click" Background="Transparent" BorderThickness="0"
+                            Width="40" Height="40" Padding="0" ToolTipService.ToolTip="Transmitir a dispositivo">
+                        <FontIcon Glyph="&#xEC15;" FontSize="14" />
+                    </Button>
+                    <Button Click="Gp_PopOut_Click" Background="Transparent" BorderThickness="0"
+                            Width="40" Height="40" Padding="0" ToolTipService.ToolTip="Mini-reproductor flotante">
+                        <FontIcon Glyph="&#xE8A7;" FontSize="14" />
+                    </Button>
+                    <Button Click="Gp_Close_Click" Background="Transparent" BorderThickness="0"
+                            Width="40" Height="40" Padding="0" ToolTipService.ToolTip="Cerrar">
+                        <FontIcon Glyph="&#xE711;" FontSize="14" />
+                    </Button>
+                </StackPanel>
             </Grid>
         </Border>
     </Grid>
