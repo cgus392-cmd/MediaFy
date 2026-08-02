@@ -59,12 +59,28 @@ public static class WhatsNewDialog
     /// <summary>Devuelve el constructor de notas para la versión dada, o null si no hay notas.</summary>
     private static Action<StackPanel>? NotesBuilder(string version) => version switch
     {
+        "2.0.0" => BuildNotes_2_0_0,
         "1.9.0" => BuildNotes_1_9_0,
         "1.8.2" => BuildNotes_1_8_2,
         "1.8.1" => BuildNotes_1_8_1,
         "1.8.0" => BuildNotes_1_8_0,
         _ => null
     };
+
+    private static void BuildNotes_2_0_0(StackPanel panel)
+    {
+        AddHeading(panel, GlyphPlay, "Letras sincronizadas (karaoke)");
+        AddParagraph(panel,
+            "Nueva vista de letra a pantalla completa: la carátula difuminada de fondo, la línea " +
+            "actual se llena al ritmo, con transiciones suaves y tamaño/alineación ajustables. " +
+            "Reconoce la canción por sus etiquetas del archivo, así que acierta incluso en álbumes.");
+
+        AddHeading(panel, GlyphInfo, "Cola y estado del sistema");
+        AddParagraph(panel,
+            "Ahora puedes ver y reordenar la cola de reproducción, y hay un diagnóstico integrado " +
+            "(el semáforo de la barra superior) que comprueba que todo funcione —incluida una prueba " +
+            "real de YouTube— para avisarte si algo se rompe antes de que te afecte.");
+    }
 
     private static void BuildNotes_1_9_0(StackPanel panel)
     {
