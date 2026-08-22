@@ -77,7 +77,7 @@ public static class DiagnosticsService
     /// <summary>Chequeos ligeros e instantáneos (no tocan la red de YouTube). Aptos para el arranque.</summary>
     public static List<HealthCheck> RunLight() => new()
     {
-        CheckBinary("yt-dlp",  "yt-dlp.exe", "Motor de descargas."),
+        CheckYtDlp(),
         CheckBinary("ffmpeg",  "ffmpeg.exe", "Conversión y mezcla de audio/video."),
         CheckJsRuntime(),
         CheckCookies(),
@@ -124,6 +124,40 @@ public static class DiagnosticsService
     }
 
     // ── Chequeos individuales ───────────────────────────────────
+    /// <summary>
+    /// yt-dlp es la pieza que sigue el ritmo de los cambios de YouTube: si se queda atrás, las
+    /// descargas empiezan a fallar (403). Por eso su versión se vigila explícitamente.
+    /// </summary>
+    private static HealthCheck CheckYtDlp()
+    {
+        var hc = new HealthCheck { Name = "yt-dlp" };
+
+        if (!File.Exists(Path.Combine(AssetsDir, "yt-dlp.exe")))
+        {
+            hc.Status = HealthStatus.Error;
+            hc.Detail = "No se encontró yt-dlp.exe. Reinstala MediaFy.";
+            return hc;
+        }
+
+        string? installed = YtDlpService.InstalledVersion;
+
+        if (YtDlpService.UpdateAvailable)
+        {
+            hc.Status = HealthStatus.Warning;
+            hc.Detail = $"Versión {installed} — hay una más reciente ({YtDlpService.LatestVersion}). "
+                      + "Mantenerlo al día es lo que evita que YouTube deje de funcionar.";
+            hc.ActionKey = "update-ytdlp";
+            hc.ActionLabel = "Actualizar";
+            return hc;
+        }
+
+        hc.Status = HealthStatus.Ok;
+        hc.Detail = installed is null
+            ? "Motor de descargas."
+            : $"Motor de descargas · versión {installed}.";
+        return hc;
+    }
+
     private static HealthCheck CheckBinary(string name, string file, string desc)
     {
         bool ok = File.Exists(Path.Combine(AssetsDir, file));

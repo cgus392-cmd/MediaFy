@@ -108,21 +108,89 @@ public class YtDlpService
         return sb.ToString();
     }
 
-    /// <summary>Ejecuta yt-dlp -U (auto-actualización al arrancar).</summary>
-    public async Task SelfUpdateAsync(CancellationToken ct = default)
+    // ── Auto-actualización de yt-dlp ────────────────────────────
+    // `yt-dlp -U` consulta la API de GitHub, que sin token limita a 60 peticiones/hora por IP.
+    // Al agotarse devuelve 403 y la actualización fallaba EN SILENCIO, así que yt-dlp se quedó
+    // meses atrás hasta que YouTube dejó de servirle los datos (403 al descargar). Aquí se evita
+    // la API por completo: la versión publicada se deduce de la redirección de /releases/latest
+    // y el binario se baja de la URL directa de la release.
+    private const string LatestReleaseUrl = "https://github.com/yt-dlp/yt-dlp/releases/latest";
+    private const string LatestBinaryUrl  = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe";
+
+    /// <summary>Versión instalada de yt-dlp (cacheada tras la comprobación), o null si no se pudo leer.</summary>
+    public static string? InstalledVersion { get; private set; }
+    /// <summary>Última versión publicada conocida, o null si no se pudo consultar.</summary>
+    public static string? LatestVersion { get; private set; }
+    /// <summary>True si consta que hay una versión más nueva que la instalada.</summary>
+    public static bool UpdateAvailable =>
+        InstalledVersion != null && LatestVersion != null &&
+        string.CompareOrdinal(LatestVersion, InstalledVersion) > 0;
+
+    /// <summary>Lee la versión instalada ejecutando `yt-dlp --version`.</summary>
+    public async Task<string?> ReadInstalledVersionAsync(CancellationToken ct = default)
     {
-        if (!File.Exists(_ytDlpPath)) return;
         try
         {
-            using var proc = Process.Start(new ProcessStartInfo
-            {
-                FileName = _ytDlpPath, Arguments = "-U --no-colors",
-                RedirectStandardOutput = true, RedirectStandardError = true,
-                UseShellExecute = false, CreateNoWindow = true
-            })!;
-            await proc.WaitForExitAsync(ct);
+            string v = (await RunAsync(_ytDlpPath, "--version", ct)).Trim();
+            InstalledVersion = string.IsNullOrWhiteSpace(v) ? null : v;
         }
-        catch { /* sin red, sin permisos, etc. */ }
+        catch { InstalledVersion = null; }
+        return InstalledVersion;
+    }
+
+    /// <summary>Versión publicada, leída de la redirección de /releases/latest (sin usar la API).</summary>
+    private static async Task<string?> ReadLatestVersionAsync(CancellationToken ct)
+    {
+        try
+        {
+            using var handler = new HttpClientHandler { AllowAutoRedirect = false };
+            using var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(15) };
+            http.DefaultRequestHeaders.UserAgent.ParseAdd("MediaFy (CG LABS)");
+
+            using var resp = await http.GetAsync(LatestReleaseUrl, HttpCompletionOption.ResponseHeadersRead, ct);
+            string? loc = resp.Headers.Location?.ToString();
+            if (string.IsNullOrEmpty(loc)) return null;
+
+            string tag = loc[(loc.LastIndexOf('/') + 1)..].Trim();
+            return string.IsNullOrWhiteSpace(tag) ? null : tag;
+        }
+        catch { return null; }
+    }
+
+    /// <summary>
+    /// Comprueba si hay una versión más nueva de yt-dlp y la instala. Devuelve true si se actualizó.
+    /// Mantener yt-dlp al día no es opcional: es lo único que sigue el ritmo de los cambios de YouTube.
+    /// </summary>
+    public async Task<bool> SelfUpdateAsync(CancellationToken ct = default)
+    {
+        if (!File.Exists(_ytDlpPath)) return false;
+
+        await ReadInstalledVersionAsync(ct);
+        LatestVersion = await ReadLatestVersionAsync(ct);
+        if (!UpdateAvailable) return false;
+
+        string tmp = _ytDlpPath + ".new";
+        try
+        {
+            using (var http = new HttpClient { Timeout = TimeSpan.FromMinutes(5) })
+            {
+                http.DefaultRequestHeaders.UserAgent.ParseAdd("MediaFy (CG LABS)");
+                byte[] bytes = await http.GetByteArrayAsync(LatestBinaryUrl, ct);
+                if (bytes.Length < 1_000_000) return false;   // descarga incompleta: no tocar nada
+                await File.WriteAllBytesAsync(tmp, bytes, ct);
+            }
+
+            // Si el ejecutable está en uso (descarga en curso), esto falla y se reintenta al
+            // próximo arranque: nunca se deja a medias.
+            File.Move(tmp, _ytDlpPath, overwrite: true);
+            InstalledVersion = LatestVersion;
+            return true;
+        }
+        catch
+        {
+            try { if (File.Exists(tmp)) File.Delete(tmp); } catch { }
+            return false;
+        }
     }
 
     /// <summary>

@@ -8,6 +8,14 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 ## [Sin publicar]
 
 ### Corregido
+- **Las descargas de YouTube fallaban con «HTTP Error 403: Forbidden».** La causa de fondo era que
+  yt-dlp (el motor de descargas) llevaba meses sin actualizarse: su auto-actualización consultaba
+  la API de GitHub, que limita las peticiones por hora, y al agotarse **fallaba en silencio**. Con
+  el motor desfasado, YouTube dejó de entregarle los datos. Ahora:
+  - Se incluye una versión al día del motor.
+  - La actualización ya no depende de esa API, así que deja de quedarse atrás sin avisar.
+  - **El Estado del sistema vigila la versión del motor** y avisa (con un botón para actualizar)
+    cuando hay una más reciente, para que no vuelva a pasar en silencio.
 - **El fundido se cortaba con la app en segundo plano:** la envolvente de volumen dependía del
   temporizador de la interfaz, que Windows ralentiza cuando la ventana no está visible, así que
   al cambiar de canción el volumen podía quedarse a medias. Ahora corre por su cuenta,

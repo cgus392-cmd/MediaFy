@@ -53,7 +53,12 @@ public partial class App : Application
 
             // Auto-update yt-dlp en background si está activado
             if (AppSettings.Current.AutoUpdateYtDlp)
-                _ = Task.Run(async () => { try { await DownloadManager.UpdateYtDlpAsync(); } catch { } });
+                _ = Task.Run(async () =>
+                {
+                    // Mantener yt-dlp al día es lo que evita que YouTube rompa las descargas.
+                    try { await DownloadManager.UpdateYtDlpAsync(); } catch { }
+                    DiagnosticsService.RefreshLight();   // refleja la versión en el diagnóstico
+                });
 
             // Búsqueda de actualizaciones al arrancar — pero como máximo una vez cada 8 horas.
             // Chequear en cada arranque agota el límite de la API pública de GitHub (60/hora/IP → 403).

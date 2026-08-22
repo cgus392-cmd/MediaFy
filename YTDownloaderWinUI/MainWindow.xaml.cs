@@ -505,7 +505,21 @@ public sealed partial class MainWindow : Window
     private void Health_Action_Click(object sender, RoutedEventArgs e)
     {
         if ((sender as FrameworkElement)?.Tag is not Core.HealthCheck hc) return;
-        if (hc.ActionKey == "import-cookies") OpenSettings();
+        switch (hc.ActionKey)
+        {
+            case "import-cookies":
+                OpenSettings();
+                break;
+            case "update-ytdlp":
+                hc.Detail = "Actualizando yt-dlp…";
+                RefreshHealthList();
+                _ = Task.Run(async () =>
+                {
+                    await App.DownloadManager.UpdateYtDlpAsync();
+                    Core.DiagnosticsService.RefreshLight();
+                });
+                break;
+        }
     }
 
     // ── Letra sincronizada (vista inmersiva, karaoke) ──────────
