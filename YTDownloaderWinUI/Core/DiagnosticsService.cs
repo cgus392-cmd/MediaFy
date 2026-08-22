@@ -42,8 +42,12 @@ public static class DiagnosticsService
         Updated?.Invoke();
     }
 
-    /// <summary>Corre solo los chequeos ligeros e instantáneos y publica el resultado.</summary>
-    public static void RefreshLight() => Publish(RunLight());
+    /// <summary>
+    /// Corre los chequeos "ligeros" y publica el resultado. Aunque son rápidos, tocan disco y red
+    /// (incluida una escritura de prueba), así que se ejecutan FUERA del hilo de UI para no
+    /// retrasar el arranque ni provocar tirones.
+    /// </summary>
+    public static void RefreshLight() => _ = Task.Run(() => Publish(RunLight()));
 
     /// <summary>Corre TODO (ligeros + prueba real de YouTube) y publica. Throttle propio anti-reentrada.</summary>
     public static async Task RunFullAsync()
@@ -52,7 +56,7 @@ public static class DiagnosticsService
         _busy = true;
         try
         {
-            var list = RunLight();
+            var list = await Task.Run(RunLight);
             var yt = await CheckYouTubeExtractionAsync();
             list.Insert(Math.Min(4, list.Count), yt); // junto a cookies/motor JS
             AppSettings.Current.LastHealthCheckUtc = DateTime.UtcNow;

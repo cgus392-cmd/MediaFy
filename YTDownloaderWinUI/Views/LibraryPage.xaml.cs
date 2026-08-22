@@ -137,49 +137,70 @@ public sealed partial class LibraryPage : Page
         });
     }
 
+    private int _loadGeneration;
+
+    /// <summary>
+    /// Carga la biblioteca. El recorrido del disco (carpetas, archivos, orden) se hace FUERA del
+    /// hilo de UI: en bibliotecas grandes hacerlo en el hilo de UI congelaba la ventana al entrar.
+    /// La UI solo recibe la lista ya construida.
+    /// </summary>
     private void LoadFiles()
     {
-        Entries.Clear();
         string folder = _currentRoot;
-        try
-        {
-            if (Directory.Exists(folder))
-            {
-                var root = new DirectoryInfo(folder);
+        int gen = ++_loadGeneration;   // invalida cargas anteriores (cambios rápidos de carpeta)
 
-                // 1) Álbumes = subcarpetas que contienen medios (ordenadas por nombre)
-                foreach (var sub in root.EnumerateDirectories().OrderBy(d => d.Name))
+        _ = Task.Run(() =>
+        {
+            var albums = new List<LibraryAlbum>();
+            var loose = new List<LibraryFile>();
+            try
+            {
+                if (Directory.Exists(folder))
                 {
-                    var tracks = sub
+                    var root = new DirectoryInfo(folder);
+
+                    // 1) Álbumes = subcarpetas que contienen medios (ordenadas por nombre)
+                    foreach (var sub in root.EnumerateDirectories().OrderBy(d => d.Name))
+                    {
+                        var tracks = sub
+                            .EnumerateFiles("*", SearchOption.TopDirectoryOnly)
+                            .Where(f => LibraryFile.MediaExtensions.Contains(f.Extension.ToLowerInvariant()))
+                            .OrderBy(f => f.Name)
+                            .Select(LibraryFile.From)
+                            .ToList();
+                        if (tracks.Count == 0) continue;
+
+                        var album = new LibraryAlbum { Name = sub.Name, FolderPath = sub.FullName };
+                        foreach (var t in tracks) album.Tracks.Add(t);
+                        albums.Add(album);
+                    }
+
+                    // 2) Archivos sueltos en la raíz (más recientes primero)
+                    loose = root
                         .EnumerateFiles("*", SearchOption.TopDirectoryOnly)
                         .Where(f => LibraryFile.MediaExtensions.Contains(f.Extension.ToLowerInvariant()))
-                        .OrderBy(f => f.Name)
+                        .OrderByDescending(f => f.LastWriteTime)
                         .Select(LibraryFile.From)
                         .ToList();
-                    if (tracks.Count == 0) continue;
-
-                    var album = new LibraryAlbum { Name = sub.Name, FolderPath = sub.FullName };
-                    foreach (var t in tracks) album.Tracks.Add(t);
-                    Entries.Add(album);
                 }
-
-                // 2) Archivos sueltos en la raíz (más recientes primero)
-                var loose = root
-                    .EnumerateFiles("*", SearchOption.TopDirectoryOnly)
-                    .Where(f => LibraryFile.MediaExtensions.Contains(f.Extension.ToLowerInvariant()))
-                    .OrderByDescending(f => f.LastWriteTime)
-                    .Select(LibraryFile.From);
-                foreach (var f in loose) Entries.Add(f);
             }
-        }
-        catch { }
+            catch { }
 
-        int total = AllFiles().Count();
-        TxtCount.Text = total.ToString();
-        EmptyState.Visibility = Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        FilesList.Visibility  = Entries.Count > 0  ? Visibility.Visible : Visibility.Collapsed;
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                if (gen != _loadGeneration) return; // llegó tarde: ya hay otra carga en curso
 
-        StartCoverExtraction();
+                Entries.Clear();
+                foreach (var a in albums) Entries.Add(a);
+                foreach (var f in loose) Entries.Add(f);
+
+                TxtCount.Text = AllFiles().Count().ToString();
+                EmptyState.Visibility = Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+                FilesList.Visibility  = Entries.Count > 0  ? Visibility.Visible : Visibility.Collapsed;
+
+                StartCoverExtraction();
+            });
+        });
     }
 
     /// <summary>Caché de portadas (ruta → portada extraída) durante la sesión: evita

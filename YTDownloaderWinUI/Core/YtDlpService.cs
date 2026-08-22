@@ -508,6 +508,7 @@ public class YtDlpService
             UseShellExecute = false, CreateNoWindow = true
         };
         proc.Start();
+        ProcessTuning.RunInBackground(proc);
         await proc.StandardError.ReadToEndAsync(ct);
         await proc.WaitForExitAsync(ct);
     }
@@ -593,6 +594,7 @@ public class YtDlpService
             CreateNoWindow = true
         };
         proc.Start();
+        ProcessTuning.RunInBackground(proc);
         string output = await proc.StandardOutput.ReadToEndAsync(ct);
         await proc.WaitForExitAsync(ct);
         if (proc.ExitCode != 0)
@@ -603,11 +605,54 @@ public class YtDlpService
         return output;
     }
 
+    /// <summary>
+    /// Limita la frecuencia con la que el progreso llega a la UI. yt-dlp emite una línea por cada
+    /// trozo descargado (decenas por segundo, y por cada descarga en paralelo); como el reporter
+    /// se creó en el hilo de UI, cada línea cruzaba a ese hilo y disparaba bindings y layout.
+    /// Refrescar ~8 veces por segundo es indistinguible para el usuario y elimina la avalancha.
+    /// Los eventos que no son porcentaje (cambio de fase, pista de lista, logs) pasan siempre.
+    /// </summary>
+    private sealed class ThrottledProgress : IProgress<DownloadProgress>
+    {
+        private readonly IProgress<DownloadProgress> _inner;
+        private readonly int _minIntervalMs;
+        private long _lastSentTicks;
+        private DownloadProgress? _pending;
+
+        public ThrottledProgress(IProgress<DownloadProgress> inner, int minIntervalMs = 125)
+        {
+            _inner = inner;
+            _minIntervalMs = minIntervalMs;
+        }
+
+        public void Report(DownloadProgress value)
+        {
+            if (value.Percent < 0) { Flush(); _inner.Report(value); return; }
+
+            long now = Environment.TickCount64;
+            if (now - _lastSentTicks >= _minIntervalMs)
+            {
+                _lastSentTicks = now;
+                _pending = null;
+                _inner.Report(value);
+            }
+            else _pending = value;   // se descarta si llega otro antes; Flush garantiza el último
+        }
+
+        /// <summary>Emite el último valor retenido (para no perder el 100% final).</summary>
+        public void Flush()
+        {
+            if (_pending is { } p) { _pending = null; _inner.Report(p); }
+        }
+    }
+
     private static async Task RunWithProgressAsync(
         string exe, string args,
-        IProgress<DownloadProgress> progress,
+        IProgress<DownloadProgress> uiProgress,
         CancellationToken ct)
     {
+        var throttled = new ThrottledProgress(uiProgress);
+        var progress = (IProgress<DownloadProgress>)throttled;
         using var proc = new Process();
         proc.StartInfo = new ProcessStartInfo
         {
@@ -620,6 +665,7 @@ public class YtDlpService
         };
 
         proc.Start();
+        ProcessTuning.RunInBackground(proc);
 
         // Si se cancela, matamos el árbol de procesos de yt-dlp.
         using var reg = ct.Register(() =>
@@ -637,6 +683,7 @@ public class YtDlpService
                 ParseLine(line, progress);
             }
         });
+        throttled.Flush();   // asegura que se vea el último progreso (100%)
 
         await proc.WaitForExitAsync(CancellationToken.None);
 

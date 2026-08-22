@@ -170,6 +170,7 @@ public class FfmpegService
             UseShellExecute = false, CreateNoWindow = true
         };
         proc.Start();
+        ProcessTuning.RunInBackground(proc);
         await proc.StandardError.ReadToEndAsync(ct);
         await proc.WaitForExitAsync(ct);
     }
@@ -187,6 +188,7 @@ public class FfmpegService
             CreateNoWindow = true
         };
         proc.Start();
+        ProcessTuning.RunInBackground(proc);
         string err = await proc.StandardError.ReadToEndAsync(ct);
         await proc.WaitForExitAsync(ct);
         if (proc.ExitCode != 0)

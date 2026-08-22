@@ -21,7 +21,12 @@ public class StringToBitmapConverter : IValueConverter
     public object? Convert(object value, Type t, object p, string l)
     {
         if (value is string s && !string.IsNullOrWhiteSpace(s) && Uri.TryCreate(s, UriKind.Absolute, out var uri))
-            return new BitmapImage(uri);
+        {
+            // Estas imágenes son miniaturas (se muestran a ~40-90 px). Sin DecodePixelWidth,
+            // WinUI decodifica el archivo a resolución completa: una portada de 1400x1400 ocupa
+            // ~7 MB en memoria por cada ítem de la lista. 240 px cubre pantallas de alta densidad.
+            return new BitmapImage(uri) { DecodePixelWidth = 240 };
+        }
         return null;
     }
     public object ConvertBack(object value, Type t, object p, string l) => throw new NotImplementedException();

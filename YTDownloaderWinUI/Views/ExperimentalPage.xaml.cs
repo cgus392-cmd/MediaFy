@@ -14,6 +14,8 @@ public sealed partial class ExperimentalPage : Page
     private string? _file;
     private bool _busy;
     private readonly DispatcherTimer _monitor = new() { Interval = TimeSpan.FromMilliseconds(1000) };
+    private bool _gpuBusy;   // evita solapar lecturas de nvidia-smi
+    private int _gpuSkip;    // consulta la GPU cada 2 ticks (2 s)
 
     public ExperimentalPage()
     {
@@ -41,13 +43,22 @@ public sealed partial class ExperimentalPage : Page
         CpuBar.Value = cpu; CpuPctText.Text = $"{cpu:F0}%";
 
         if (!Core.HardwareInfo.HasNvidiaGpu) { GpuBar.Value = 0; GpuPctText.Text = "—"; return; }
+
+        // Leer la GPU lanza nvidia-smi (un proceso nuevo cada vez). Se consulta cada 2 s y nunca
+        // en paralelo: si la anterior sigue en curso se salta este turno.
+        if (_gpuBusy || ++_gpuSkip < 2) return;
+        _gpuSkip = 0;
+        _gpuBusy = true;
         _ = Task.Run(() =>
         {
-            double g = Core.HardwareInfo.GpuUsagePercent();
+            double g = -1;
+            try { g = Core.HardwareInfo.GpuUsagePercent(); }
+            catch { /* nvidia-smi no disponible */ }
             DispatcherQueue.TryEnqueue(() =>
             {
                 if (g < 0) { GpuPctText.Text = "—"; }
                 else { GpuBar.Value = g; GpuPctText.Text = $"{g:F0}%"; }
+                _gpuBusy = false;   // siempre se libera, aunque haya fallado
             });
         });
     }

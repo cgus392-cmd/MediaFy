@@ -5,6 +5,29 @@ Todos los cambios notables de MediaFy se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [Sin publicar]
+
+### Corregido
+- **El fundido se cortaba con la app en segundo plano:** la envolvente de volumen dependía del
+  temporizador de la interfaz, que Windows ralentiza cuando la ventana no está visible, así que
+  al cambiar de canción el volumen podía quedarse a medias. Ahora corre por su cuenta,
+  independiente de la ventana.
+
+### Cambiado (rendimiento)
+- **Se acabaron los tirones al usar la app.** El trabajo pesado ya no ocurre en el hilo de la
+  interfaz: la configuración se guarda de forma agrupada y en segundo plano (antes escribía en
+  disco en cada cambio, así que arrastrar un control provocaba decenas de escrituras), la
+  Biblioteca recorre el disco en segundo plano (antes congelaba la ventana al entrar) y el
+  diagnóstico de arranque ya no retrasa el inicio.
+- **MediaFy deja de estorbar al resto del equipo.** yt-dlp, ffmpeg y el motor de separación por IA
+  se ejecutan con prioridad reducida: siguen aprovechando toda la CPU libre, pero ceden el paso a
+  la aplicación que estés usando.
+- **Descargas más fluidas:** el progreso se refresca a un ritmo constante en vez de una vez por
+  cada fragmento descargado, que saturaba la interfaz con varias descargas a la vez.
+- Menos trabajo desperdiciado: el reproductor solo actualiza lo que está visible, las miniaturas
+  se cargan al tamaño en que se muestran (mucha menos memoria) y el monitor de GPU consulta con
+  menos frecuencia.
+
 ## [2.0.0] - 2026-07-30
 
 ### Añadido

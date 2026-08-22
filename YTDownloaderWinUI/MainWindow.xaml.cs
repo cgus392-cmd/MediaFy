@@ -172,6 +172,8 @@ public sealed partial class MainWindow : Window
         try { _tray?.Dispose(); _tray = null; } catch { }
         try { App.Playback.Close(); } catch { }
         try { App.Clipboard.Disable(); } catch { }
+        // El guardado de ajustes es diferido: forzarlo aquí para no perder el último cambio.
+        try { AppSettings.Current.SaveNow(); } catch { }
 
         // Garantiza la muerte del proceso y de TODOS sus hijos (yt-dlp/ffmpeg):
         // WinUI 3 + MediaPlayer + bandeja suelen dejar el proceso vivo si solo cerramos la ventana.
@@ -761,20 +763,30 @@ public sealed partial class MainWindow : Window
     // ── VU meter (MediaPlayer + AudioStateMonitor, ligero, sin glitches) ──
     private void VuTimer_Tick(object? sender, object e)
     {
-        App.Playback.TickLevels();
-        _vuL = App.Playback.LevelLeft;
-        _vuR = App.Playback.LevelRight;
-        SetBar(GpVuLeftBig, _vuL);
-        SetBar(GpVuRightBig, _vuR);
-        App.Playback.TickFade();   // envolvente de fundido entre canciones
-        UpdateSeekUI();
-        SyncLyrics();
-        // Detener el VU cuando ya no hay audio y las barras decayeron (ahorra CPU en reposo)
+        // Este tick es lo único que corre continuamente mientras suena música: mantenerlo barato.
+        // Solo se actualiza la UI realmente visible — antes se recalculaba el VU y la barra de
+        // progreso incluso con el reproductor oculto, gastando layout para nada.
+        // (El fundido ya NO depende de este timer: tiene el suyo en PlaybackService.)
+        if (GlobalPlayer.Visibility == Visibility.Visible)
+        {
+            App.Playback.TickLevels();
+            _vuL = App.Playback.LevelLeft;
+            _vuR = App.Playback.LevelRight;
+            SetBar(GpVuLeftBig, _vuL);
+            SetBar(GpVuRightBig, _vuR);
+        }
+        else { _vuL = _vuR = 0; }
+
+        if (MiniPlayer.Visibility == Visibility.Visible) UpdateSeekUI();
+        if (_lyricsOpen) SyncLyrics();
+
+        // Detener el tick cuando ya no hay audio (ahorra CPU en reposo)
         if (!App.Playback.HasMedia && _vuL < 0.01 && _vuR < 0.01) _vuTimer.Stop();
     }
 
     // ── Timeline de la canción (barra de progreso seekable del mini-reproductor) ──
     private bool _seeking;
+    private int _shownElapsed = -1, _shownTotal = -1;   // caché para no reescribir textos cada tick
 
     private void UpdateSeekUI()
     {
@@ -784,8 +796,12 @@ public sealed partial class MainWindow : Window
         double dur = s?.NaturalDuration.TotalSeconds ?? 0;
         double frac = dur > 0 ? Math.Clamp(pos / dur, 0, 1) : 0;
         SetSeekFill(MiniSeekFill, frac);
-        MiniElapsed.Text = FmtTime(pos);
-        MiniTotal.Text = FmtTime(dur);
+
+        // Los textos solo cambian una vez por segundo: evitar reescribirlos en cada tick
+        // (cada escritura invalida el layout del bloque de texto).
+        int ps = (int)pos, ds = (int)dur;
+        if (ps != _shownElapsed) { _shownElapsed = ps; MiniElapsed.Text = FmtTime(pos); }
+        if (ds != _shownTotal)   { _shownTotal   = ds; MiniTotal.Text   = FmtTime(dur); }
     }
 
     private static void SetSeekFill(FrameworkElement fill, double frac)
@@ -836,8 +852,10 @@ public sealed partial class MainWindow : Window
 
     private static void SetBar(FrameworkElement bar, double level)
     {
-        if (bar.Parent is FrameworkElement host && host.ActualWidth > 0)
-            bar.Width = Math.Max(0, Math.Min(1, level) * host.ActualWidth);
+        if (bar.Parent is not FrameworkElement host || host.ActualWidth <= 0) return;
+        double w = Math.Clamp(level, 0, 1) * host.ActualWidth;
+        // Escribir Width invalida el layout: hacerlo solo si el cambio es perceptible.
+        if (Math.Abs(bar.Width - w) > 0.5) bar.Width = w;
     }
 
     // ── Transmitir a dispositivo ───────────────────────────────

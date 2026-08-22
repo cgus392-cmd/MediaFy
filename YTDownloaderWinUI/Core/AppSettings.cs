@@ -130,17 +130,52 @@ public partial class AppSettings : ObservableObject
         return def;
     }
 
+    // ── Guardado diferido (no bloquea la UI) ────────────────────
+    // Antes se escribía el JSON en disco, de forma síncrona y en el hilo de UI, en CADA cambio de
+    // propiedad: arrastrar un slider provocaba decenas de escrituras y tirones visibles. Ahora los
+    // cambios se agrupan (debounce) y la escritura ocurre fuera del hilo de UI.
+    private const int SaveDebounceMs = 400;
+    private readonly object _saveLock = new();
+    private CancellationTokenSource? _saveCts;
+
     private void HookSave()
     {
-        PropertyChanged += (_, _) => Save();
+        PropertyChanged += (_, _) => ScheduleSave();
     }
 
-    private void Save()
+    private void ScheduleSave()
+    {
+        CancellationToken ct;
+        lock (_saveLock)
+        {
+            _saveCts?.Cancel();
+            _saveCts = new CancellationTokenSource();
+            ct = _saveCts.Token;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(SaveDebounceMs, ct);   // agrupa ráfagas (p. ej. arrastrar un slider)
+                SaveNow();
+            }
+            catch (OperationCanceledException) { /* llegó otro cambio: ese guardará */ }
+        });
+    }
+
+    /// <summary>Escribe la configuración inmediatamente (usar al cerrar la app).</summary>
+    public void SaveNow()
     {
         try
         {
+            string json;
+            lock (_saveLock) json = JsonConvert.SerializeObject(this, Formatting.Indented);
             Directory.CreateDirectory(SettingsDir);
-            File.WriteAllText(SettingsPath, JsonConvert.SerializeObject(this, Formatting.Indented));
+            // Escritura atómica: un fallo a media escritura no deja la config corrupta.
+            string tmp = SettingsPath + ".tmp";
+            File.WriteAllText(tmp, json);
+            File.Move(tmp, SettingsPath, overwrite: true);
         }
         catch { /* sin permisos de escritura → ignorar */ }
     }

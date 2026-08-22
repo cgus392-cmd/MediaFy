@@ -191,6 +191,9 @@ public class StemService
         proc.StartInfo.EnvironmentVariables["PATH"] = assetsDir + Path.PathSeparator + torchLibDir + Path.PathSeparator + currentPath;
 
         proc.Start();
+        // La separación por IA satura la CPU durante minutos: en segundo plano para que el equipo
+        // siga usable mientras trabaja.
+        ProcessTuning.RunInBackground(proc);
 
         // En caso de cancelación, matamos todo el árbol de procesos
         using var reg = ct.Register(() =>
