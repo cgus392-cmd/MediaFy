@@ -71,6 +71,28 @@ public class PlaybackService
     private double CrossfadeSeconds => AppSettings.Current.CrossfadeSeconds;
     private bool CrossfadeOn => CrossfadeSeconds > 0.1;
 
+    // El fundido NO puede depender del timer de la UI: Windows lo estrangula cuando la ventana no
+    // está visible y el volumen se quedaba congelado a media transición. Este timer propio (fuera
+    // del hilo de UI) mantiene la envolvente correcta aunque la app esté en segundo plano.
+    private System.Threading.Timer? _fadeTimer;
+
+    private void EnsureFadeTimer()
+    {
+        if (!CrossfadeOn || !HasMedia) { StopFadeTimer(); return; }
+        _fadeTimer ??= new System.Threading.Timer(_ => { try { TickFade(); } catch { } }, null, 60, 60);
+    }
+
+    private void StopFadeTimer()
+    {
+        _fadeTimer?.Dispose();
+        _fadeTimer = null;
+        if (_fading)
+        {
+            _fading = false;
+            try { _player.Volume = _targetVolume; } catch { }
+        }
+    }
+
     /// <summary>Niveles aproximados por canal (0..1). Derivados del estado de audio del MediaPlayer.</summary>
     public double LevelLeft  { get; private set; }
     public double LevelRight { get; private set; }
@@ -89,6 +111,12 @@ public class PlaybackService
             else Changed?.Invoke();
         };
         _player.PlaybackSession.PlaybackStateChanged += (_, _) => { UpdateSmtcState(); Changed?.Invoke(); };
+
+        // Activar/desactivar el fundido en caliente si el usuario cambia el ajuste.
+        AppSettings.Current.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(AppSettings.CrossfadeSeconds)) EnsureFadeTimer();
+        };
 
         // Si el usuario reordena la cola (arrastrar en la vista de cola), re-ubicamos el índice
         // actual siguiendo el elemento que está sonando, para no perder el hilo.
@@ -186,6 +214,7 @@ public class PlaybackService
 
         EnsureSmtc();
         if (_smtc != null) { _smtc.IsNextEnabled = HasNext; _smtc.IsPreviousEnabled = HasPrev; }
+        EnsureFadeTimer();   // la envolvente de fundido corre en su propio timer, no en el de UI
         await UpdateSmtcMetadataAsync();
         Changed?.Invoke();
         QueueChanged?.Invoke();
@@ -238,6 +267,7 @@ public class PlaybackService
         try { _player.Pause(); } catch { }
         _player.Source = null;
         HasMedia = false;
+        StopFadeTimer();
         Queue.Clear(); _qIndex = -1; _current = null; _fading = false;
         CurrentTitle = CurrentArtist = string.Empty;
         LevelLeft = LevelRight = 0;
