@@ -59,6 +59,7 @@ public static class WhatsNewDialog
     /// <summary>Devuelve el constructor de notas para la versión dada, o null si no hay notas.</summary>
     private static Action<StackPanel>? NotesBuilder(string version) => version switch
     {
+        "2.0.1" => BuildNotes_2_0_1,
         "2.0.0" => BuildNotes_2_0_0,
         "1.9.0" => BuildNotes_1_9_0,
         "1.8.2" => BuildNotes_1_8_2,
@@ -66,6 +67,26 @@ public static class WhatsNewDialog
         "1.8.0" => BuildNotes_1_8_0,
         _ => null
     };
+
+    private static void BuildNotes_2_0_1(StackPanel panel)
+    {
+        AddHeading(panel, GlyphInfo, "Descargas de YouTube arregladas");
+        AddParagraph(panel,
+            "Algunas descargas fallaban con un error 403. La causa era que el motor de descargas " +
+            "llevaba tiempo sin actualizarse: su actualización automática fallaba en silencio y, " +
+            "con el motor desfasado, YouTube dejaba de entregar los datos.");
+        AddParagraph(panel,
+            "Esta versión incluye el motor al día, corrige su actualización automática y —para que " +
+            "no vuelva a pasar sin avisar— el Estado del sistema ahora vigila su versión.");
+
+        AddHeading(panel, GlyphPlay, "La app va más fluida");
+        AddParagraph(panel,
+            "Se eliminaron los tirones al usar la aplicación, el reproductor ya no se queda a medias " +
+            "cuando la ventana está en segundo plano, y MediaFy dejó de acaparar el procesador " +
+            "mientras descarga o convierte, así que el resto del equipo sigue respondiendo.");
+
+        AddStatusBar(panel);
+    }
 
     private static void BuildNotes_2_0_0(StackPanel panel)
     {
