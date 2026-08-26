@@ -5,7 +5,7 @@ Todos los cambios notables de MediaFy se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
-## [Sin publicar]
+## [2.1.0] - 2026-08-26
 
 ### Añadido
 - **Karaoke palabra por palabra.** La letra ya no se ilumina línea a línea: cada palabra se
@@ -166,6 +166,7 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   batería y bajo, con modelos MDX-Net / Demucs / BS-Roformer en la GPU local.
 - Mezclador de stems, monitor de CPU/GPU en vivo, progreso en línea y desinstalación del motor.
 
+[2.1.0]: https://github.com/cgus392-cmd/MediaFy/releases/tag/v2.1.0
 [2.0.1]: https://github.com/cgus392-cmd/MediaFy/releases/tag/v2.0.1
 [2.0.0]: https://github.com/cgus392-cmd/MediaFy/releases/tag/v2.0.0
 [1.9.0]: https://github.com/cgus392-cmd/MediaFy/releases/tag/v1.9.0

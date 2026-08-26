@@ -59,6 +59,7 @@ public static class WhatsNewDialog
     /// <summary>Devuelve el constructor de notas para la versión dada, o null si no hay notas.</summary>
     private static Action<StackPanel>? NotesBuilder(string version) => version switch
     {
+        "2.1.0" => BuildNotes_2_1_0,
         "2.0.1" => BuildNotes_2_0_1,
         "2.0.0" => BuildNotes_2_0_0,
         "1.9.0" => BuildNotes_1_9_0,
@@ -67,6 +68,21 @@ public static class WhatsNewDialog
         "1.8.0" => BuildNotes_1_8_0,
         _ => null
     };
+
+    private static void BuildNotes_2_1_0(StackPanel panel)
+    {
+        AddHeading(panel, GlyphPlay, "Karaoke palabra por palabra");
+        AddParagraph(panel,
+            "La letra ya no se ilumina línea a línea: ahora cada palabra se enciende en su momento " +
+            "exacto. Y la vista de letra se divide en dos: la letra a un lado y, al otro, la " +
+            "carátula del álbum con los controles de reproducción.");
+
+        AddHeading(panel, GlyphInfo, "Más fuentes de letra");
+        AddParagraph(panel,
+            "MediaFy consulta varias fuentes y usa la primera que tenga la canción, así que " +
+            "aparecen letras que antes no encontraba. Puedes cambiar el orden de preferencia en " +
+            "Ajustes → Fuentes de letra. Todas son gratuitas y no requieren cuenta.");
+    }
 
     private static void BuildNotes_2_0_1(StackPanel panel)
     {
