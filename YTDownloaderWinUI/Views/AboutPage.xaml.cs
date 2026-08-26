@@ -9,6 +9,12 @@ public sealed partial class AboutPage : Page
     public AboutPage()
     {
         InitializeComponent();
+
+        // Versión y año se leen del ensamblado y del reloj: estaban escritos a mano y quedaban
+        // desfasados en cada release (la app mostraba 1.7.0 siendo ya la 2.0.1).
+        TxtVersion.Text = $"Versión {Core.UpdateService.CurrentVersion()}";
+        TxtCopyright.Text = $"© {DateTime.Now.Year} CG LABS";
+
         Loaded += (_, _) => UpdateBrandLogo();
         ActualThemeChanged += (_, _) => UpdateBrandLogo();
     }

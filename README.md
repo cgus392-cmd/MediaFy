@@ -11,7 +11,7 @@
 [![Windows](https://img.shields.io/badge/Windows-10/11-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://www.microsoft.com/windows/)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![WinUI 3](https://img.shields.io/badge/WinUI-3-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://learn.microsoft.com/windows/apps/winui/winui3/)
-[![Release](https://img.shields.io/badge/Release-v1.0.0-22C55E?style=for-the-badge)](https://github.com/cgus392-cmd/MediaFy/releases)
+[![Release](https://img.shields.io/github/v/release/cgus392-cmd/MediaFy?style=for-the-badge&label=Release&color=22C55E)](https://github.com/cgus392-cmd/MediaFy/releases/latest)
 [![CG LABS](https://img.shields.io/badge/CG-LABS-EF4444?style=for-the-badge)](https://github.com/cgus392-cmd)
 
 [**📥 Descargar**](#-instalación) ·
@@ -87,11 +87,9 @@ Asistente de instalación guiado paso a paso integrado en la propia app.
 
 ## 📥 Instalación
 
-### Opción 1 — Instalador (recomendado)
-Descarga `MediaFy-Setup-1.0.0.exe` desde la **[última Release](https://github.com/cgus392-cmd/MediaFy/releases/latest)**, ejecútalo y sigue los pasos. Incluye accesos directos, desinstalador y registro completo del protocolo `mediafy://`.
+Descarga el instalador (`MediaFy-Setup-*.exe`) desde la **[última Release](https://github.com/cgus392-cmd/MediaFy/releases/latest)**, ejecútalo y sigue los pasos. Incluye accesos directos, desinstalador y registro completo del protocolo `mediafy://`.
 
-### Opción 2 — Portable
-Descarga `MediaFy-Portable-1.0.0.zip`, descomprime donde quieras (USB, escritorio…) y ejecuta `MediaFy.exe`. Sin instalación, sin registro.
+MediaFy se actualiza solo: cuando hay una versión nueva te avisa dentro de la app y la instala por ti.
 
 ### Requisitos
 - Windows **10 (1809)** o superior — Windows 11 recomendado

@@ -17,7 +17,7 @@
                 </TextBlock>
                 <Border Background="{ThemeResource AccentFillColorDefaultBrush}" CornerRadius="10"
                         Padding="10,2" HorizontalAlignment="Center" Margin="0,4,0,0">
-                    <TextBlock Text="Versión 1.7.0" FontSize="12" Foreground="White" />
+                    <TextBlock x:Name="TxtVersion" FontSize="12" Foreground="White" />
                 </Border>
             </StackPanel>
 
@@ -134,7 +134,7 @@
                        Text="Construido con WinUI 3 · Windows App SDK · yt-dlp · ffmpeg" />
             <Image x:Name="CgLabsLogo" Height="24" Stretch="Uniform"
                    HorizontalAlignment="Center" Margin="0,12,0,2" Opacity="0.85" />
-            <TextBlock Text="© 2026 CG LABS" TextAlignment="Center" FontSize="11"
+            <TextBlock x:Name="TxtCopyright" TextAlignment="Center" FontSize="11"
                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
         </StackPanel>
     </ScrollViewer>

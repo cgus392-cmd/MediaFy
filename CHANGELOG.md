@@ -5,6 +5,17 @@ Todos los cambios notables de MediaFy se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [Sin publicar]
+
+### Corregido
+- **«Acerca de» mostraba una versión incorrecta.** El número estaba escrito a mano (decía 1.7.0)
+  en vez de leerse de la aplicación, así que quedaba desfasado en cada actualización. Ahora
+  muestra la versión real, y el año del pie también se calcula solo.
+
+### Cambiado
+- README: la insignia de versión ahora se actualiza sola con la última publicación, y se retiró
+  la opción «portable», que ya no se distribuye.
+
 ## [2.0.1] - 2026-08-22
 
 > **Actualización obligatoria.** Sin ella, las descargas de YouTube fallan.
