@@ -7,6 +7,12 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+### Añadido
+- **La vista de letra ahora muestra también lo que suena.** Se divide en dos: la letra
+  sincronizada a la izquierda y, a la derecha, la carátula del álbum, el título, la barra de
+  progreso (arrastrable) y los controles de reproducción con volumen. En ventanas estrechas el
+  panel se oculta solo para que la letra siga siendo legible.
+
 ### Corregido
 - **«Acerca de» mostraba una versión incorrecta.** El número estaba escrito a mano (decía 1.7.0)
   en vez de leerse de la aplicación, así que quedaba desfasado en cada actualización. Ahora

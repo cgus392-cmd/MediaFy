@@ -516,48 +516,123 @@
                 </Border.Background>
             </Border>
 
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
+            <!-- Dos paneles: la letra a la izquierda, "reproduciendo ahora" a la derecha -->
+            <Grid SizeChanged="LyricsOverlay_SizeChanged">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-                <!-- Barra superior: título + ajustes -->
-                <Grid Padding="24,16,16,8" ColumnSpacing="12">
-                    <StackPanel VerticalAlignment="Center">
-                        <TextBlock x:Name="LyricsOverlayTitle" Text="" FontSize="18" FontWeight="SemiBold"
-                                   Foreground="White" TextTrimming="CharacterEllipsis" MaxLines="1" />
-                        <TextBlock x:Name="LyricsOverlayArtist" Text="" FontSize="13"
-                                   Foreground="#B0FFFFFF" TextTrimming="CharacterEllipsis" MaxLines="1" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Spacing="2">
+                <!-- Panel izquierdo: letra -->
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <ScrollViewer x:Name="LyricsScroll" VerticalScrollBarVisibility="Hidden"
+                                  HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled"
+                                  Padding="48,0">
+                        <StackPanel x:Name="LyricsStack" />
+                    </ScrollViewer>
+                    <TextBlock x:Name="LyricsStatus" Visibility="Collapsed" Foreground="#CCFFFFFF"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="15"
+                               TextWrapping="Wrap" TextAlignment="Center" MaxWidth="420" Text="Buscando letra…" />
+
+                    <!-- Ajustes de la letra, discretos abajo -->
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="2"
+                                HorizontalAlignment="Left" Margin="40,0,0,14">
                         <Button Click="Lyrics_FontSmaller" Background="Transparent" BorderThickness="0"
-                                Width="40" Height="40" Padding="0" ToolTipService.ToolTip="Texto más pequeño">
-                            <FontIcon Glyph="&#xE8E7;" FontSize="15" Foreground="White" />
+                                Width="38" Height="38" Padding="0" ToolTipService.ToolTip="Texto más pequeño">
+                            <FontIcon Glyph="&#xE8E7;" FontSize="14" Foreground="#B0FFFFFF" />
                         </Button>
                         <Button Click="Lyrics_FontBigger" Background="Transparent" BorderThickness="0"
-                                Width="40" Height="40" Padding="0" ToolTipService.ToolTip="Texto más grande">
-                            <FontIcon Glyph="&#xE8E8;" FontSize="15" Foreground="White" />
+                                Width="38" Height="38" Padding="0" ToolTipService.ToolTip="Texto más grande">
+                            <FontIcon Glyph="&#xE8E8;" FontSize="14" Foreground="#B0FFFFFF" />
                         </Button>
                         <Button Click="Lyrics_ToggleAlign" Background="Transparent" BorderThickness="0"
-                                Width="40" Height="40" Padding="0" ToolTipService.ToolTip="Alineación">
-                            <FontIcon x:Name="LyricsAlignIcon" Glyph="&#xE8E4;" FontSize="15" Foreground="White" />
-                        </Button>
-                        <Button Click="Lyrics_CloseOverlay" Background="Transparent" BorderThickness="0"
-                                Width="40" Height="40" Padding="0" ToolTipService.ToolTip="Cerrar">
-                            <FontIcon Glyph="&#xE711;" FontSize="15" Foreground="White" />
+                                Width="38" Height="38" Padding="0" ToolTipService.ToolTip="Alineación">
+                            <FontIcon x:Name="LyricsAlignIcon" Glyph="&#xE8E4;" FontSize="14" Foreground="#B0FFFFFF" />
                         </Button>
                     </StackPanel>
                 </Grid>
 
-                <!-- Letras (líneas generadas en código para control total del karaoke) -->
-                <ScrollViewer Grid.Row="1" x:Name="LyricsScroll" VerticalScrollBarVisibility="Hidden"
-                              HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled" Padding="48,0">
-                    <StackPanel x:Name="LyricsStack" />
-                </ScrollViewer>
-                <TextBlock Grid.Row="1" x:Name="LyricsStatus" Visibility="Collapsed" Foreground="#CCFFFFFF"
-                           HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="15"
-                           TextWrapping="Wrap" TextAlignment="Center" MaxWidth="420" Text="Buscando letra…" />
+                <!-- Panel derecho: carátula y controles -->
+                <Grid x:Name="LyricsNowPlaying" Grid.Column="1" Width="380" Padding="28,16,28,28">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Button Grid.Row="0" Click="Lyrics_CloseOverlay" HorizontalAlignment="Right"
+                            Background="Transparent" BorderThickness="0" Width="40" Height="40" Padding="0"
+                            ToolTipService.ToolTip="Cerrar">
+                        <FontIcon Glyph="&#xE711;" FontSize="15" Foreground="White" />
+                    </Button>
+
+                    <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="20">
+                        <!-- Carátula -->
+                        <Border Width="240" Height="240" CornerRadius="14" HorizontalAlignment="Center"
+                                Background="#22FFFFFF">
+                            <Grid>
+                                <FontIcon x:Name="LyricsCoverIcon" Glyph="&#xEC4F;" FontSize="56" Foreground="#66FFFFFF" />
+                                <Image x:Name="LyricsCover" Stretch="UniformToFill" Visibility="Collapsed" />
+                            </Grid>
+                        </Border>
+
+                        <!-- Título / artista -->
+                        <StackPanel Spacing="3">
+                            <TextBlock x:Name="LyricsOverlayTitle" Text="" FontSize="19" FontWeight="SemiBold"
+                                       Foreground="White" TextAlignment="Center"
+                                       TextTrimming="CharacterEllipsis" MaxLines="2" TextWrapping="Wrap" />
+                            <TextBlock x:Name="LyricsOverlayArtist" Text="" FontSize="13" TextAlignment="Center"
+                                       Foreground="#B0FFFFFF" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                        </StackPanel>
+
+                        <!-- Progreso (clic o arrastre para saltar) -->
+                        <StackPanel Spacing="4">
+                            <Grid x:Name="LyricsSeekTrack" Height="16" Background="Transparent"
+                                  PointerPressed="Seek_PointerPressed" PointerMoved="Seek_PointerMoved"
+                                  PointerReleased="Seek_PointerReleased">
+                                <Border Height="4" CornerRadius="2" VerticalAlignment="Center" Background="#33FFFFFF" />
+                                <Border x:Name="LyricsSeekFill" Height="4" CornerRadius="2" VerticalAlignment="Center"
+                                        HorizontalAlignment="Left" Width="0" Background="White" />
+                            </Grid>
+                            <Grid>
+                                <TextBlock x:Name="LyricsElapsed" Text="0:00" FontSize="11"
+                                           Foreground="#B0FFFFFF" HorizontalAlignment="Left" />
+                                <TextBlock x:Name="LyricsTotal" Text="0:00" FontSize="11"
+                                           Foreground="#80FFFFFF" HorizontalAlignment="Right" />
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- Controles -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10">
+                            <Button x:Name="LyricsPrev" Click="Gp_Prev_Click" Background="Transparent"
+                                    BorderThickness="0" Width="52" Height="52" Padding="0"
+                                    ToolTipService.ToolTip="Anterior">
+                                <FontIcon Glyph="&#xE892;" FontSize="20" Foreground="White" />
+                            </Button>
+                            <Button Click="Gp_PlayPause_Click" Width="60" Height="60" Padding="0" CornerRadius="30"
+                                    Background="#26FFFFFF" BorderThickness="0"
+                                    ToolTipService.ToolTip="Reproducir / pausar">
+                                <FontIcon x:Name="LyricsPlayIcon" Glyph="&#xE769;" FontSize="22" Foreground="White" />
+                            </Button>
+                            <Button x:Name="LyricsNext" Click="Gp_Next_Click" Background="Transparent"
+                                    BorderThickness="0" Width="52" Height="52" Padding="0"
+                                    ToolTipService.ToolTip="Siguiente">
+                                <FontIcon Glyph="&#xE893;" FontSize="20" Foreground="White" />
+                            </Button>
+                        </StackPanel>
+
+                        <!-- Volumen -->
+                        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                            <FontIcon Glyph="&#xE767;" FontSize="14" Foreground="#B0FFFFFF" VerticalAlignment="Center" />
+                            <Slider x:Name="LyricsVolume" Width="190" Minimum="0" Maximum="100"
+                                    VerticalAlignment="Center" ValueChanged="Gp_Volume_Changed" />
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
             </Grid>
         </Grid>
     </Grid>

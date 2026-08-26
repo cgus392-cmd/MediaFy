@@ -355,8 +355,8 @@ public sealed partial class MainWindow : Window
         UpdatePlayIcon();
         UpdatePlayersVisibility();
         UpdateMiniCover();
-        GpPrev.IsEnabled = App.Playback.HasPrev;
-        GpNext.IsEnabled = App.Playback.HasNext;
+        GpPrev.IsEnabled = LyricsPrev.IsEnabled = App.Playback.HasPrev;
+        GpNext.IsEnabled = LyricsNext.IsEnabled = App.Playback.HasNext;
         if (App.Playback.HasMedia && !_vuTimer.IsEnabled) _vuTimer.Start();
 
         // Letra: si cambió la canción, invalida la actual y refresca si el panel está abierto.
@@ -399,6 +399,7 @@ public sealed partial class MainWindow : Window
         string g = char.ConvertFromUtf32(App.Playback.IsPlaying ? 0xE769 : 0xE768);
         GpPlayIcon.Glyph = g;
         GpMiniPlayIcon.Glyph = g;
+        LyricsPlayIcon.Glyph = g;
     }
 
     private void UpdatePlayersVisibility()
@@ -415,6 +416,7 @@ public sealed partial class MainWindow : Window
         double v = App.Playback.Volume * 100;
         GpVolume.Value = v;
         GpMiniVolume.Value = v;
+        LyricsVolume.Value = v;
         _volSync = false;
     }
 
@@ -549,12 +551,34 @@ public sealed partial class MainWindow : Window
     private void SetLyricsBg()
     {
         string? cover = App.Playback.CurrentCover;
-        if (!string.IsNullOrEmpty(cover) && (cover.StartsWith("http") || System.IO.File.Exists(cover)))
+        bool ok = !string.IsNullOrEmpty(cover) && (cover.StartsWith("http") || System.IO.File.Exists(cover));
+        if (ok)
         {
-            try { LyricsBgImage.Source = new BitmapImage(new Uri(cover)); LyricsBgImage.Opacity = 1; return; }
-            catch { }
+            try
+            {
+                var bmp = new BitmapImage(new Uri(cover!));
+                LyricsBgImage.Source = bmp;          // fondo difuminado
+                LyricsBgImage.Opacity = 1;
+                LyricsCover.Source = bmp;            // caratula del panel derecho
+                LyricsCover.Visibility = Visibility.Visible;
+                LyricsCoverIcon.Visibility = Visibility.Collapsed;
+                return;
+            }
+            catch { /* url/imagen invalida */ }
         }
         LyricsBgImage.Source = null; LyricsBgImage.Opacity = 0;
+        LyricsCover.Source = null;
+        LyricsCover.Visibility = Visibility.Collapsed;
+        LyricsCoverIcon.Visibility = Visibility.Visible;
+    }
+
+    /// <summary>
+    /// En ventanas estrechas no caben los dos paneles: se oculta el de la caratula para que la
+    /// letra siga siendo legible (los controles siguen disponibles en la barra del reproductor).
+    /// </summary>
+    private void LyricsOverlay_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        LyricsNowPlaying.Visibility = e.NewSize.Width < 820 ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private async Task LoadLyricsForCurrentAsync()
@@ -791,7 +815,7 @@ public sealed partial class MainWindow : Window
         }
         else { _vuL = _vuR = 0; }
 
-        if (MiniPlayer.Visibility == Visibility.Visible) UpdateSeekUI();
+        if (MiniPlayer.Visibility == Visibility.Visible || _lyricsOpen) UpdateSeekUI();
         if (_lyricsOpen) SyncLyrics();
 
         // Detener el tick cuando ya no hay audio (ahorra CPU en reposo)
@@ -809,14 +833,34 @@ public sealed partial class MainWindow : Window
         double pos = s?.Position.TotalSeconds ?? 0;
         double dur = s?.NaturalDuration.TotalSeconds ?? 0;
         double frac = dur > 0 ? Math.Clamp(pos / dur, 0, 1) : 0;
-        SetSeekFill(MiniSeekFill, frac);
+
+        bool mini = MiniPlayer.Visibility == Visibility.Visible;
+        if (mini) SetSeekFill(MiniSeekFill, frac);
+        if (_lyricsOpen) SetSeekFill(LyricsSeekFill, frac);
 
         // Los textos solo cambian una vez por segundo: evitar reescribirlos en cada tick
         // (cada escritura invalida el layout del bloque de texto).
         int ps = (int)pos, ds = (int)dur;
-        if (ps != _shownElapsed) { _shownElapsed = ps; MiniElapsed.Text = FmtTime(pos); }
-        if (ds != _shownTotal)   { _shownTotal   = ds; MiniTotal.Text   = FmtTime(dur); }
+        if (ps != _shownElapsed)
+        {
+            _shownElapsed = ps;
+            string t = FmtTime(pos);
+            if (mini) MiniElapsed.Text = t;
+            if (_lyricsOpen) LyricsElapsed.Text = t;
+        }
+        if (ds != _shownTotal)
+        {
+            _shownTotal = ds;
+            string t = FmtTime(dur);
+            if (mini) MiniTotal.Text = t;
+            if (_lyricsOpen) LyricsTotal.Text = t;
+        }
     }
+
+    /// <summary>Devuelve el relleno que corresponde a la pista de progreso indicada.</summary>
+    private FrameworkElement? FillFor(FrameworkElement track) =>
+        ReferenceEquals(track, MiniSeekTrack)   ? MiniSeekFill :
+        ReferenceEquals(track, LyricsSeekTrack) ? LyricsSeekFill : null;
 
     private static void SetSeekFill(FrameworkElement fill, double frac)
     {
@@ -861,7 +905,11 @@ public sealed partial class MainWindow : Window
         var s = App.Playback.Player?.PlaybackSession;
         double dur = s?.NaturalDuration.TotalSeconds ?? 0;
         if (dur > 0) App.Playback.Seek(TimeSpan.FromSeconds(frac * dur));
-        SetSeekFill(MiniSeekFill, frac); // feedback visual inmediato
+
+        // Feedback inmediato sobre la barra que se esta arrastrando (hay una en el mini-reproductor
+        // y otra en la vista de letra).
+        var fill = FillFor(track);
+        if (fill != null) SetSeekFill(fill, frac);
     }
 
     private static void SetBar(FrameworkElement bar, double level)
