@@ -603,8 +603,20 @@ public sealed partial class MainWindow : Window
         if (_lyricKey != key) return; // cambió la canción mientras buscábamos
 
         _lyrics = lines;
-        if (lines is { Count: > 0 }) BuildLyricsBlocks();
-        else ShowLyricsStatus("No encontramos letra sincronizada para esta canción.");
+        if (lines is { Count: > 0 })
+        {
+            BuildLyricsBlocks();
+            string src = Core.LyricsService.LastProviderUsed ?? "";
+            LyricsSource.Text = Core.LyricsService.LastHadWords
+                ? $"Letra por palabra · {src}"
+                : $"Letra · {src}";
+            LyricsSource.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            LyricsSource.Visibility = Visibility.Collapsed;
+            ShowLyricsStatus("No encontramos letra sincronizada para esta canción.");
+        }
     }
 
     private void ShowLyricsStatus(string message)
@@ -709,15 +721,51 @@ public sealed partial class MainWindow : Window
             }
         }
 
-        // Barrido karaoke: mueve el borde del relleno según el progreso dentro de la línea.
+        // Barrido karaoke: mueve el borde del relleno sobre la línea actual.
         if (idx >= 0 && _lyricFill != null)
         {
-            double start = lines[idx].Time.TotalSeconds;
-            double end = (idx + 1 < lines.Count) ? lines[idx + 1].Time.TotalSeconds : start + 4;
-            double p = end > start ? Math.Clamp((pos.TotalSeconds - start) / (end - start), 0, 1) : 1;
+            double p = FillFraction(lines, idx, pos);
             _lyricFill.GradientStops[1].Offset = p;
             _lyricFill.GradientStops[2].Offset = p;
         }
+    }
+
+    /// <summary>
+    /// Cuánto de la línea actual ya se cantó (0..1). Si la fuente trae tiempos por palabra, el
+    /// barrido los sigue de verdad (karaoke real); si no, se reparte la línea proporcionalmente
+    /// entre su inicio y el de la siguiente.
+    /// </summary>
+    private static double FillFraction(List<Core.LyricLineVm> lines, int idx, TimeSpan pos)
+    {
+        var line = lines[idx];
+        var words = line.Words;
+
+        if (words is { Count: > 0 })
+        {
+            int total = 0;
+            foreach (var w in words) total += w.Text.Length;
+            if (total == 0) return 1;
+
+            int prefix = 0;
+            foreach (var w in words)
+            {
+                if (pos < w.Start) return (double)prefix / total;      // aún no llega a esta palabra
+                var end = w.Start + w.Duration;
+                if (pos < end)
+                {
+                    double inside = w.Duration.TotalMilliseconds > 0
+                        ? (pos - w.Start).TotalMilliseconds / w.Duration.TotalMilliseconds
+                        : 1;
+                    return (prefix + Math.Clamp(inside, 0, 1) * w.Text.Length) / total;
+                }
+                prefix += w.Text.Length;
+            }
+            return 1;
+        }
+
+        double start = line.Time.TotalSeconds;
+        double lineEnd = (idx + 1 < lines.Count) ? lines[idx + 1].Time.TotalSeconds : start + 4;
+        return lineEnd > start ? Math.Clamp((pos.TotalSeconds - start) / (lineEnd - start), 0, 1) : 1;
     }
 
     // Transición suave de una línea entre estado normal (atenuada, escala 1) y actual (brillante, escala 1.08).

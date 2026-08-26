@@ -8,6 +8,13 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 ## [Sin publicar]
 
 ### Añadido
+- **Karaoke palabra por palabra.** La letra ya no se ilumina línea a línea: cada palabra se
+  enciende en su momento exacto, como en las apps de música de referencia. Depende de que la
+  fuente ofrezca esos tiempos; si no los tiene, se mantiene el barrido suave por línea.
+- **Varias fuentes de letra, en el orden que tú elijas.** Ajustes → «Fuentes de letra» permite
+  arrastrar para priorizarlas: se usa la primera que tenga la letra y, si falla, se pasa a la
+  siguiente sin que tengas que hacer nada. Todas son gratuitas y no requieren cuenta ni clave.
+  La vista de letra indica de qué fuente proviene lo que estás viendo.
 - **La vista de letra ahora muestra también lo que suena.** Se divide en dos: la letra
   sincronizada a la izquierda y, a la derecha, la carátula del álbum, el título, la barra de
   progreso (arrastrable) y los controles de reproducción con volumen. En ventanas estrechas el

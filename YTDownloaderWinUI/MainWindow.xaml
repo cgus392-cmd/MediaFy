@@ -540,6 +540,9 @@
                                TextWrapping="Wrap" TextAlignment="Center" MaxWidth="420" Text="Buscando letra…" />
 
                     <!-- Ajustes de la letra, discretos abajo -->
+                    <TextBlock x:Name="LyricsSource" Grid.Row="1" Visibility="Collapsed"
+                               HorizontalAlignment="Right" VerticalAlignment="Center"
+                               Margin="0,0,40,14" FontSize="11" Foreground="#80FFFFFF" />
                     <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="2"
                                 HorizontalAlignment="Left" Margin="40,0,0,14">
                         <Button Click="Lyrics_FontSmaller" Background="Transparent" BorderThickness="0"

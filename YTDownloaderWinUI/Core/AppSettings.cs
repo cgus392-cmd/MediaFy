@@ -69,6 +69,12 @@ public partial class AppSettings : ObservableObject
     [ObservableProperty] private string _miniPlayerMode = "Bar";
 
     /// <summary>
+    /// Orden de preferencia de las fuentes de letras (por nombre). La primera que tenga la letra
+    /// es la que se usa. Vacío = orden por defecto (KuGou primero, por su karaoke por palabra).
+    /// </summary>
+    [ObservableProperty] private List<string> _lyricsProviderOrder = new();
+
+    /// <summary>
     /// Segundos de fundido entre canciones (0 = desactivado). Al reproducir una cola, la canción
     /// que sale baja el volumen y la que entra sube ("entrada épica"), sin superponer audio.
     /// </summary>

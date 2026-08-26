@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Linq;
 using System.IO;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -50,6 +51,20 @@ public sealed partial class SettingsPage : Page
 
         CrossfadeSlider.Value = Core.AppSettings.Current.CrossfadeSeconds;
         UpdateCrossfadeDesc(Core.AppSettings.Current.CrossfadeSeconds);
+
+        LoadLyricsProviders();
+    }
+
+    // ── Fuentes de letra ────────────────────────────────────────
+    private System.Collections.ObjectModel.ObservableCollection<Core.ILyricsProvider>? _providers;
+
+    private void LoadLyricsProviders()
+    {
+        _providers = new(Core.LyricsService.OrderedProviders());
+        // Al soltar un elemento la colección cambia: ese es el momento de guardar el nuevo orden.
+        _providers.CollectionChanged += (_, _) =>
+            Core.AppSettings.Current.LyricsProviderOrder = _providers!.Select(p => p.Name).ToList();
+        LyricsProvidersList.ItemsSource = _providers;
     }
 
     private void OnCrossfadeChanged(object sender, RangeBaseValueChangedEventArgs e)
